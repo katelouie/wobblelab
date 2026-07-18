@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "squishlab"
+version = "0.0.1"
+description = "LLM determinism framework."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Kate Louie", email = "katehlouie@gmail.com" }]
+license = "MIT"

@@ -1,1 +1,3 @@
-# squishlab
+# SquishLab
+
+LLM determinism framework.
