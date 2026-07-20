@@ -10,3 +10,14 @@ readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Kate Louie", email = "katehlouie@gmail.com" }]
 license = "MIT"
+dependencies = [
+    "requests>=2.31",
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]

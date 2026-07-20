@@ -1,0 +1,183 @@
+{
+  "model": "qwen3.5:0.8b",
+  "quantization": "Q8_0",
+  "config": {
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "min_p": 0.0,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "num_predict": 4
+  },
+  "think": false,
+  "n_rerun": 30,
+  "n_para": 15,
+  "seed_scheme": "explicit 0..N-1 per prompt",
+  "disp_threshold": 0.15,
+  "margin_threshold": 0.6,
+  "seconds": 153.0,
+  "results": [
+    {
+      "name": "water_wet",
+      "question": "Is water wet?",
+      "counts": {
+        "yes": 26,
+        "no": 4
+      },
+      "majority": "yes",
+      "dispersion": 0.133,
+      "para_majorities": [
+        "yes",
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "SOLID"
+    },
+    {
+      "name": "hotdog_sandwich",
+      "question": "Is a hotdog a sandwich?",
+      "counts": {
+        "yes": 25,
+        "no": 5
+      },
+      "majority": "yes",
+      "dispersion": 0.167,
+      "para_majorities": [
+        "yes",
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "NOISY-BUT-SURE"
+    },
+    {
+      "name": "seven_prime",
+      "question": "Is 7 a prime number?",
+      "counts": {
+        "yes": 25,
+        "no": 5
+      },
+      "majority": "yes",
+      "dispersion": 0.167,
+      "para_majorities": [
+        "yes",
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "NOISY-BUT-SURE"
+    },
+    {
+      "name": "zero_even",
+      "question": "Is zero an even number?",
+      "counts": {
+        "yes": 25,
+        "no": 5
+      },
+      "majority": "yes",
+      "dispersion": 0.167,
+      "para_majorities": [
+        "yes",
+        "no",
+        "no",
+        "no"
+      ],
+      "flip_rate": 0.75,
+      "margin": 0.25,
+      "unparseable": 0,
+      "quadrant": "COIN-FLIP"
+    },
+    {
+      "name": "tomato_fruit",
+      "question": "Is a tomato a fruit?",
+      "counts": {
+        "yes": 25,
+        "no": 5
+      },
+      "majority": "yes",
+      "dispersion": 0.167,
+      "para_majorities": [
+        "yes",
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "NOISY-BUT-SURE"
+    },
+    {
+      "name": "pluto_planet",
+      "question": "Is Pluto a planet?",
+      "counts": {
+        "no": 29,
+        "yes": 1
+      },
+      "majority": "no",
+      "dispersion": 0.033,
+      "para_majorities": [
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "SOLID"
+    },
+    {
+      "name": "rain_tomorrow",
+      "question": "Will it rain tomorrow?",
+      "counts": {
+        "no": 18,
+        "yes": 12
+      },
+      "majority": "no",
+      "dispersion": 0.4,
+      "para_majorities": [
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "NOISY-BUT-SURE"
+    },
+    {
+      "name": "cereal_soup",
+      "question": "Is cereal a soup?",
+      "counts": {
+        "no": 27,
+        "yes": 3
+      },
+      "majority": "no",
+      "dispersion": 0.1,
+      "para_majorities": [
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "flip_rate": 0.0,
+      "margin": 1.0,
+      "unparseable": 0,
+      "quadrant": "SOLID"
+    }
+  ]
+}
