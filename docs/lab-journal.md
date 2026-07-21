@@ -25,6 +25,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **D-006** | **Typed paraphrase taxonomy** (casual / formal / hedge / reorder / lexical), constant K per battery | Makes the hot-spot diagnostic (*which kind* of change broke it) and keeps worst-case margins comparable |
 | **D-007** | **Squish score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional squish; rerun-variation is squish only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
 | **D-008** | **Bootstrap is for CIs on *derived/composite* statistics, not a substitute for reruns.** Use it for the squish score, the model-level headline (resample prompts), and benchmark accuracy (resample items — the correct unit, since reruns of one item are correlated). It is NOT a shortcut around actual sampling: resampling can't invent power, and for a plain proportion it just reproduces Wilson. The real way to spend fewer *calls* is adaptive/sequential sampling, not bootstrap. | Kate asked whether we could "bootstrap into" reruns; the honest answer is no for base rates, yes for composites — where there's no clean closed form and resampling recorded outcomes is free. |
+| **D-009** | **Harness squish = sweep the eval harness on fixed items.** Two axes: scoring (`gen` = sample+parse a letter vs `ll` = argmax over first-token letter logprobs, the official method) × shots (0 vs 5, exemplars from MMLU's `dev` split). Metric = **natural-position accuracy** (the leaderboard number), CI bootstrapped over items; spread across the 2×2 = harness squish, main effects decompose it. `ll` via ollama native `/api/chat` `logprobs:true, top_logprobs:20`. | F-019 argued official-vs-ours is "not directly comparable"; this turns that argument into a *quantified decomposition* — how many points are scoring vs shots vs everything-else — instead of a hand-wave. Same items/seed as bench.py so `gen/0-shot` cross-checks F-017. |
 
 ## Findings ledger
 
@@ -49,6 +50,9 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-017** | **A bare benchmark number is nearly meaningless without the squish breakdown.** On MMLU:world_religions the 0.8B's 36% accuracy is a *position-bias artifact*: accuracy swings **48 points** by answer-position (A 65% → B 17%, *below* the 25% chance floor), driven by a 56%-A chosen-letter bias. The whole squishlab thesis, on a real benchmark, first run. | bench |
 | **F-018** | **Bootstrap-over-items widens the accuracy CI honestly:** [0.31, 0.42] vs the naive Wilson-over-trials [0.33, 0.40] — item clustering matters (D-008). And **~29% of answers flip their content under option reordering** (interventional squish 0.29 [0.24, 0.35]). | bench |
 | **F-019** | **Official Qwen3.5-0.8B numbers exist** (HF model card, non-thinking mode: MMLU-Pro 29.7, MMLU-Redux 48.5, C-Eval 46.4, MMMLU 34.1; thinking mode ~10–13 pts higher). Two sharp points: **(a)** Qwen's *own* recommended inference settings are `top_p 0.95 / top_k 20 / presence_penalty 1.5 / temp 1.0` = **ollama's Modelfile default verbatim** — so the config we dismissed as "ollama's packaging" (D-003) is Qwen's *official* one. There is no *neutral* config; even the official number is a config choice, which strengthens, not weakens, the point. **(b)** Official scores are log-likelihood + few-shot + full-precision + full-benchmark; ours is generation + zero-shot + Q8 + a 40-item slice — *not directly comparable*, and none of the official numbers carry a CI or a position-bias/squish breakdown. | web / model card |
+| **F-020** | **ollama's logprobs are top-20-capped but near-lossless for MC.** `top_logprobs` hard-caps at 20 (50+ → HTTP 400); it returns the top-N alternatives, not the full vocab softmax. But on a lettered-MC first token the distribution is so peaked that the top-20 captures **99.9%** of the mass, and candidate-letter coverage measured **0.95 at 0-shot / 1.00 at 5-shot** (few-shot format-anchoring closes the gap). When a letter falls outside top-20 its true prob is < e⁻⁹ ≈ 0.0001, so treating it as −∞ for the argmax is harmless. The `ll` scorer is effectively exact. | probe / harness |
+| **F-021** | **A 20-point spread from harness alone.** Same model, same 40 items: natural-position accuracy runs **0.30 → 0.50** across the four harnesses (`ll/0-shot` 0.50, `gen/0-shot` 0.41, `ll/5-shot` 0.38, `gen/5-shot` 0.30). Main effects: **scoring (ll−gen) +0.08** (reading the distribution beats sampling a letter), **shots (5−0) −0.12** (few-shot *hurts* this 0.8B, robustly across both scoring methods). So F-019's 36-vs-48.5 "gap" was mostly scoring-method + which-number-you-report, not capability: measured the official way (`ll`), our crude Q8 40-item slice brackets the official 48.5 (0.50 [0.35,0.65]). The leaderboard number is a *harness choice*, quantified. | harness |
+| **F-022** | **Log-likelihood scoring does *not* cure position bias — it sharpens it.** Switching gen→ll, the 0-shot position swing *grows* 0.48 → 0.70 and the chosen-A share *rises* 56% → 67%, even as debiased accuracy improves 0.36 → 0.48. Sampling at temp 1 blurs the model's positional preference (it occasionally samples off-top); argmax commits to the top logit every time, so ll is simultaneously more accurate *and* more polarized. The bias lives in the weights, not the readout — the "cleaner" scoring method exposes it undiluted rather than removing it. My "ll will fix the bias" prediction lost. | harness |
 
 ---
 
@@ -321,16 +325,65 @@ without the squish, and squishlab surfaces the position bias, the reorder fragil
 the honest CI in one shot. `results/bench_world_religions.{png,json}`. Next: TruthfulQA
 MC1 (predict *higher* squish — adversarial-by-construction), and more subjects/models.
 
+## 2026-07-21 — harness squish: the leaderboard number is a config choice, quantified
+
+F-019 left an open charge: our 36% and the official 48.5 are "not directly comparable"
+because the harnesses differ (generation + zero-shot + Q8 vs log-likelihood + few-shot +
+full precision). That's an argument, not a measurement. This turns it into a measurement:
+hold the 40 items fixed and *sweep the harness* — scoring (gen vs ll) × shots (0 vs 5) —
+so the only thing moving is the eval convention. → **D-009.**
+
+**Building the ll scorer meant answering Kate's question first:** does ollama return the
+full distribution or just top-N? Probed it — **top-N only, hard-capped at 20** (50+ →
+HTTP 400), same contract as OpenAI. But on a lettered-MC first token the softmax is so
+peaked the top-20 holds **99.9%** of the mass, and the four candidate letters sit at the
+very top (ranks 1,2,3,5 on a test item). So first-token argmax over the returned letter
+logprobs *is* the official MMLU scoring method, and it's effectively exact here. The
+native `/api/chat` endpoint respects `think:false` cleanly; the OpenAI-compat one leaked
+the thinking trace, so native it is. Instrumented the harness to count coverage anyway —
+it came back **0.95 (0-shot) / 1.00 (5-shot)**, the few-shot exemplars anchoring the
+format enough to pull every letter into the top-20. → **F-020.**
+
+**The result (579s, ~1,440 calls). `results/harness_world_religions.{png,json}`.**
+Cross-check passed first: `gen/0-shot` debiased = **0.364**, identical to F-017 — same
+seed, same items, reproducible instrument.
+
+- **F-021 — a 20-point spread from harness alone.** Natural-position accuracy (what a
+  leaderboard prints) runs **0.30 → 0.50** across the four cells. The *same model on the
+  same items* is "30%" or "50%" depending only on eval convention. Scoring lifts +0.08
+  (ll > gen: reading the distribution beats sampling a letter and paying the output-bias
+  tax); **few-shot *costs* −0.12** — 5 exemplars *hurt* this 0.8B, robustly under both
+  scorings. So the F-019 gap wasn't a capability gap: measured the official way (ll,
+  0-shot), our crude Q8 40-item slice brackets the official 48.5 at **0.50 [0.35, 0.65]**.
+  Once you match the harness, the mystery mostly evaporates — and what's left is that
+  "the accuracy" was never a point, it's a range you pick a number from.
+- **F-022 — ll doesn't cure position bias, it sharpens it.** I predicted log-likelihood
+  scoring would flatten the brutal position swing (F-017's 48 points). It *widened* it:
+  swing **0.48 → 0.70**, chosen-A share **56% → 67%**, even as debiased accuracy rose
+  0.36 → 0.48. The mechanism is clean: temp-1 sampling occasionally samples off the top
+  letter, blurring the model's positional preference toward the middle; argmax commits to
+  the top logit every time, so ll is simultaneously *more accurate* and *more polarized*.
+  The bias is in the weights, not the readout — the cleaner method exposes it undiluted.
+  A better finding than the one I bet on: you cannot scoring-method your way out of a
+  model that reaches for "A."
+
+Net: harness squish is real and large (20 pts here), it decomposes cleanly (scoring helps,
+few-shot hurts, position bias is model-intrinsic), and the leaderboard's single number is
+demonstrably one draw from a harness-dependent range. Next: TruthfulQA MC1 (still queued,
+predict higher squish); then config-as-squish (D-003 → data).
+
 ---
 
 ## Open questions / backlog
 
-- **Match the official harness to measure harness-squish directly.** Add a
-  log-likelihood + 5-shot eval mode (to mirror how MMLU-Redux 48.5 was produced) and
-  compare against our generation + zero-shot number on the same items. The gap between
-  the two *is* the harness-squish, and it's the cleanest way to show a leaderboard number
-  is a config choice (F-019). Also: run our position-debiased method on the full subject
-  and compare to the official aggregate. TruthfulQA MC1 still queued (predict higher squish).
+- ~~**Match the official harness to measure harness-squish directly.**~~ **Done**
+  (D-009, F-020/21/22, `experiments/harness.py`): ll + few-shot eval mode built, 2×2
+  harness sweep run, 20-pt spread quantified and decomposed. Remaining threads it opened:
+  **(a)** run the sweep on the *full* subject (not a 40-item slice) and on more subjects,
+  to see if "few-shot hurts" and the scoring lift hold in aggregate; **(b)** 5-shot
+  position profiles (we only profiled 0-shot) — does few-shot change the position bias?;
+  **(c)** TruthfulQA MC1 still queued (predict higher squish, adversarial-by-construction;
+  variable option counts need the loader generalized past a fixed 4).
 - **Config as a squish axis, quantified.** Re-run the same battery under ollama's
   Modelfile defaults vs the controlled config, and directly measure how much the
   dispersion moves. That turns D-003's *argument* into *data*.

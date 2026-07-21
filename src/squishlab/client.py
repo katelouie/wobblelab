@@ -58,6 +58,53 @@ class OllamaClient:
         r.raise_for_status()
         return r.json()["message"]["content"]
 
+    def rank_letters(
+        self, prompt: str, n_options: int, seed: int = 0, top_logprobs: int = 20
+    ) -> tuple[int | None, dict[str, float]]:
+        """Log-likelihood readout: the first-token logprob of each candidate letter.
+
+        This is how official MC benchmarks score — argmax over the model's probability
+        of "A"/"B"/"C"/... as the next token — with no sampling, so it sidesteps the
+        output-side biases the generation path is exposed to (F-017). Deterministic
+        (temperature 0, one token). Returns the chosen *presentation position* (0-based,
+        or None if no candidate letter appears) and the per-letter logprobs; letters
+        absent from the returned top_logprobs are simply missing (treated as -inf).
+
+        top_p/top_k stay neutral (CONTROLLED) so the reported distribution is the full
+        softmax, not a truncated view.
+        """
+        r = requests.post(
+            self.url,
+            json={
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "options": {
+                    **self.options,
+                    "temperature": 0.0,
+                    "num_predict": 1,
+                    "seed": seed,
+                },
+                "think": self.think,
+                "logprobs": True,
+                "top_logprobs": top_logprobs,
+                "stream": False,
+            },
+            timeout=self.timeout,
+        )
+        r.raise_for_status()
+        steps = r.json().get("logprobs") or []
+        candidates = "ABCDEFGH"[:n_options]
+        scores: dict[str, float] = {}
+        if steps:
+            for entry in steps[0].get("top_logprobs", []):
+                tok = entry["token"].strip()
+                if tok in candidates and tok not in scores:
+                    scores[tok] = entry["logprob"]
+        if not scores:
+            return None, {}
+        chosen = max(scores, key=scores.__getitem__)
+        return candidates.index(chosen), scores
+
     def config(self) -> dict:
         """The full, loggable config, for the results manifest."""
         return {

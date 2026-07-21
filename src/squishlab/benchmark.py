@@ -58,6 +58,17 @@ def presented_to_original(pos: int | None, order: tuple[int, ...]) -> int | None
     return order[pos]
 
 
+def orders_correct_at_each_position(item: MCItem) -> list[tuple[int, ...]]:
+    """One presentation order per option slot, placing the correct answer at that slot.
+
+    Distractors keep their relative order, so the only thing that varies is *where* the
+    right answer sits — isolating position bias (index p -> correct answer at position p).
+    """
+    a, k = item.answer_idx, len(item.options)
+    distractors = [i for i in range(k) if i != a]
+    return [tuple(distractors[:p] + [a] + distractors[p:]) for p in range(k)]
+
+
 def modal(values) -> tuple[int | None, float]:
     """Most common non-None value and its fraction of the decided votes."""
     c = Counter(v for v in values if v is not None)

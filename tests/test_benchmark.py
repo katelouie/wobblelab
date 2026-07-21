@@ -4,6 +4,7 @@ from squishlab.benchmark import (
     MCItem,
     format_prompt,
     modal,
+    orders_correct_at_each_position,
     parse_answer,
     presented_to_original,
 )
@@ -43,3 +44,16 @@ def test_modal():
     val, frac = modal([0, 0, 1, 0, None])
     assert val == 0 and frac == 0.75  # 3 of 4 decided
     assert modal([None, None]) == (None, 0.0)
+
+
+def test_orders_place_correct_answer_at_each_position():
+    orders = orders_correct_at_each_position(ITEM)  # answer_idx=0
+    assert len(orders) == 4
+    # In order p, the correct original index (0) sits at presentation position p.
+    for p, order in enumerate(orders):
+        assert order[p] == ITEM.answer_idx
+        assert sorted(order) == [0, 1, 2, 3]  # a genuine permutation, no drops
+    # Distractors keep their relative order across all placements.
+    for order in orders:
+        distractors = [i for i in order if i != ITEM.answer_idx]
+        assert distractors == sorted(distractors)

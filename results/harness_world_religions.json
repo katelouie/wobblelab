@@ -1,0 +1,96 @@
+{
+  "model": "qwen3.5:0.8b",
+  "quant": "Q8_0",
+  "subject": "world_religions",
+  "config": {
+    "model": "qwen3.5:0.8b",
+    "url": "http://localhost:11434/api/chat",
+    "options": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 8
+    },
+    "think": false
+  },
+  "n_items": 40,
+  "n_rerun_gen": 5,
+  "n_shots": 5,
+  "official_mmlu_redux": 0.485,
+  "grid": {
+    "gen_0shot": {
+      "acc": 0.41,
+      "ci": [
+        0.32,
+        0.505
+      ],
+      "coverage": null
+    },
+    "ll_0shot": {
+      "acc": 0.5,
+      "ci": [
+        0.35,
+        0.65
+      ],
+      "coverage": 0.95
+    },
+    "gen_5shot": {
+      "acc": 0.3,
+      "ci": [
+        0.245,
+        0.355
+      ],
+      "coverage": null
+    },
+    "ll_5shot": {
+      "acc": 0.375,
+      "ci": [
+        0.225,
+        0.525
+      ],
+      "coverage": 1.0
+    }
+  },
+  "profiles_0shot": {
+    "gen": {
+      "acc_by_pos": [
+        0.645,
+        0.165,
+        0.22,
+        0.425
+      ],
+      "chosen_dist": [
+        0.557,
+        0.081,
+        0.108,
+        0.255
+      ],
+      "swing": 0.48,
+      "debiased_acc": 0.364
+    },
+    "ll": {
+      "acc_by_pos": [
+        0.9,
+        0.2,
+        0.35,
+        0.45
+      ],
+      "chosen_dist": [
+        0.669,
+        0.05,
+        0.1,
+        0.181
+      ],
+      "swing": 0.7,
+      "debiased_acc": 0.475
+    }
+  },
+  "harness_squish": 0.2,
+  "scoring_effect": 0.083,
+  "shot_effect": -0.117,
+  "seconds": 579.5
+}

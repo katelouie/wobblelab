@@ -30,6 +30,7 @@ from squishlab.benchmark import (  # noqa: E402
     MCItem,
     format_prompt,
     modal,
+    orders_correct_at_each_position,
     parse_answer,
     presented_to_original,
 )
@@ -62,13 +63,6 @@ def load_mmlu(subject: str, n: int, seed: int) -> list[MCItem]:
             )
         )
     return items
-
-
-def orders_correct_at_each_position(item: MCItem) -> list[tuple[int, ...]]:
-    """One ordering per option position, with the correct answer placed there."""
-    a, k = item.answer_idx, len(item.options)
-    distractors = [i for i in range(k) if i != a]
-    return [tuple(distractors[:p] + [a] + distractors[p:]) for p in range(k)]
 
 
 def measure(item: MCItem):
