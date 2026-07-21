@@ -24,6 +24,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **D-005** | Everything carries CIs (Wilson on rates, Newcombe on shifts). Point for placement, CI for honesty; **CI straddling a threshold → `unresolved`**, not forced into a quadrant. Both axes identical. | A reliability tool must not report point estimates without error bars; N=30 thresholds were slicing sampling noise (F-004) |
 | **D-006** | **Typed paraphrase taxonomy** (casual / formal / hedge / reorder / lexical), constant K per battery | Makes the hot-spot diagnostic (*which kind* of change broke it) and keeps worst-case margins comparable |
 | **D-007** | **Squish score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional squish; rerun-variation is squish only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
+| **D-008** | **Bootstrap is for CIs on *derived/composite* statistics, not a substitute for reruns.** Use it for the squish score, the model-level headline (resample prompts), and benchmark accuracy (resample items — the correct unit, since reruns of one item are correlated). It is NOT a shortcut around actual sampling: resampling can't invent power, and for a plain proportion it just reproduces Wilson. The real way to spend fewer *calls* is adaptive/sequential sampling, not bootstrap. | Kate asked whether we could "bootstrap into" reruns; the honest answer is no for base rates, yes for composites — where there's no clean closed form and resampling recorded outcomes is free. |
 
 ## Findings ledger
 
@@ -45,6 +46,9 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-014** | **Qwen-0.8B is cross-lingually *consistent* on clear facts:** mean EN↔ZH `\|Δ\|` = 0.10, and **zero majority accuracy gaps** — it gets every decidable fact right in *both* languages. More robust than predicted; my "we'll catch an accuracy gap" bet lost. | x-lingual |
 | **F-015** | **Pluto is the cross-lingual outlier among facts** (`\|Δ\|`=0.33): 95% "not a planet" in English vs only 62% in Chinese. The model's grip on the recent, English-discourse-heavy IAU reclassification is much weaker in Chinese — real cross-lingual squish, on the one fact with a contested history. | x-lingual |
 | **F-016** | **Cultural framing is language-bound.** Both cultural items swing hard cross-lingually (hotdog 0.32, soymilk 0.43), and 豆浆是汤吗 ("is soy milk a soup") **flips its majority**: *no* in English (0.43), *yes* in Chinese (0.86). Confounded (not clean squish), but a crisp demo that category conventions live per-language — and the Chinese-culture item swung most. | x-lingual |
+| **F-017** | **A bare benchmark number is nearly meaningless without the squish breakdown.** On MMLU:world_religions the 0.8B's 36% accuracy is a *position-bias artifact*: accuracy swings **48 points** by answer-position (A 65% → B 17%, *below* the 25% chance floor), driven by a 56%-A chosen-letter bias. The whole squishlab thesis, on a real benchmark, first run. | bench |
+| **F-018** | **Bootstrap-over-items widens the accuracy CI honestly:** [0.31, 0.42] vs the naive Wilson-over-trials [0.33, 0.40] — item clustering matters (D-008). And **~29% of answers flip their content under option reordering** (interventional squish 0.29 [0.24, 0.35]). | bench |
+| **F-019** | **Official Qwen3.5-0.8B numbers exist** (HF model card, non-thinking mode: MMLU-Pro 29.7, MMLU-Redux 48.5, C-Eval 46.4, MMMLU 34.1; thinking mode ~10–13 pts higher). Two sharp points: **(a)** Qwen's *own* recommended inference settings are `top_p 0.95 / top_k 20 / presence_penalty 1.5 / temp 1.0` = **ollama's Modelfile default verbatim** — so the config we dismissed as "ollama's packaging" (D-003) is Qwen's *official* one. There is no *neutral* config; even the official number is a config choice, which strengthens, not weakens, the point. **(b)** Official scores are log-likelihood + few-shot + full-precision + full-benchmark; ours is generation + zero-shot + Q8 + a 40-item slice — *not directly comparable*, and none of the official numbers carry a CI or a position-bias/squish breakdown. | web / model card |
 
 ---
 
@@ -285,10 +289,48 @@ otherwise cross-lingually solid on facts, and the cultural items behave as confo
 interesting rather than as squish. The design (invariant-facts-are-clean, cultural-items-
 are-a-bias-look) held up.
 
+## 2026-07-21 — benchmark squish on MMLU (the original idea)
+
+The application the whole project was aimed at: instead of a leaderboard's bare accuracy
+number, report **accuracy + a CI + a squish score**. Built the reusable MC machinery
+(`src/squishlab/benchmark.py`, tested — the option-permutation round-trip is the heart of
+it) and the harness (`experiments/bench.py`). Also added `bootstrap_ci` to `stats.py`
+(D-008), prompted by Kate's bootstrap question.
+
+**Design.** For each item, place the correct answer at *every* option position
+(distractors keep relative order) and rerun each. Option reordering is guaranteed
+meaning-preserving, so it's a clean interventional axis with no paraphrase-quality
+confound — and placing the answer at each position measures position bias directly.
+Accuracy CI is **bootstrapped over items** (the correct resampling unit; reruns of one
+item are correlated, so Wilson-over-trials lies).
+
+**First run — MMLU:world_religions, 40 items × 4 orders × 5 reruns (4 min):**
+
+- **F-017 — the number is a mirage.** Debiased accuracy 0.364, but that hides everything:
+  accuracy by answer-position is **A 0.65 / B 0.17 / C 0.22 / D 0.42**, a **48-point swing**
+  driven purely by *where the correct answer sits*. B-accuracy (0.17) is *below* the 0.25
+  chance floor — the model actively avoids B. The mechanism is a brutal chosen-letter bias:
+  **A 56% / B 8% / C 11% / D 25%.** The model mostly answers "A," so it looks competent
+  only when the answer happens to be A. A leaderboard would print "36%"; the honest report
+  is "36% ± 5, but really 65% if the answer's at A and 17% if it's at B."
+- **F-018 — CI + reorder squish.** Bootstrap-over-items CI [0.31, 0.42] is properly wider
+  than naive Wilson-over-trials [0.33, 0.40]. ~29% of answers flip content under reordering.
+
+This is exactly the pitch, demonstrated: the leaderboard number is nearly meaningless
+without the squish, and squishlab surfaces the position bias, the reorder fragility, and
+the honest CI in one shot. `results/bench_world_religions.{png,json}`. Next: TruthfulQA
+MC1 (predict *higher* squish — adversarial-by-construction), and more subjects/models.
+
 ---
 
 ## Open questions / backlog
 
+- **Match the official harness to measure harness-squish directly.** Add a
+  log-likelihood + 5-shot eval mode (to mirror how MMLU-Redux 48.5 was produced) and
+  compare against our generation + zero-shot number on the same items. The gap between
+  the two *is* the harness-squish, and it's the cleanest way to show a leaderboard number
+  is a config choice (F-019). Also: run our position-debiased method on the full subject
+  and compare to the official aggregate. TruthfulQA MC1 still queued (predict higher squish).
 - **Config as a squish axis, quantified.** Re-run the same battery under ollama's
   Modelfile defaults vs the controlled config, and directly measure how much the
   dispersion moves. That turns D-003's *argument* into *data*.

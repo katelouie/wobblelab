@@ -21,3 +21,6 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
 ]
+bench = [
+    "datasets>=3.0",  # loading standard MC benchmarks (MMLU, TruthfulQA)
+]

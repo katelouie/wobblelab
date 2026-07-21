@@ -7,6 +7,9 @@ should not itself report point estimates without error bars. See lab-journal D-0
 from __future__ import annotations
 
 import math
+import random
+from collections.abc import Callable, Sequence
+from typing import Any
 
 Z95 = 1.959963984540054  # standard-normal quantile for a 95% two-sided interval
 
@@ -58,3 +61,31 @@ def confident_shift(k1: int, n1: int, k2: int, n2: int, z: float = Z95) -> float
     if hi < 0:
         return -hi
     return 0.0
+
+
+def bootstrap_ci(
+    data: Sequence[Any],
+    statistic: Callable[[Sequence[Any]], float],
+    n_boot: int = 2000,
+    alpha: float = 0.05,
+    seed: int = 0,
+) -> tuple[float, float]:
+    """Percentile bootstrap CI for an arbitrary statistic of a sample.
+
+    Resamples ``data`` WITH REPLACEMENT ``n_boot`` times and recomputes ``statistic``.
+    NOTE: this cannot invent statistical power you did not sample -- for a plain
+    proportion it merely reproduces ``wilson_ci``. Its real use is *derived/composite*
+    statistics with no clean closed form (the squish score, the model-level headline
+    over prompts, benchmark accuracy across orderings), where you resample the recorded
+    outcomes at zero additional model cost. See lab-journal D-008.
+    """
+    n = len(data)
+    if n == 0:
+        return (0.0, 0.0)
+    rng = random.Random(seed)
+    stats = sorted(
+        statistic([data[rng.randrange(n)] for _ in range(n)]) for _ in range(n_boot)
+    )
+    lo = stats[int((alpha / 2) * n_boot)]
+    hi = stats[min(n_boot - 1, int((1 - alpha / 2) * n_boot))]
+    return (lo, hi)

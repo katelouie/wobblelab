@@ -1,0 +1,329 @@
+{
+  "model": "qwen3.5:0.8b",
+  "quant": "Q8_0",
+  "subject": "world_religions",
+  "config": {
+    "model": "qwen3.5:0.8b",
+    "url": "http://localhost:11434/api/chat",
+    "options": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 8
+    },
+    "think": false
+  },
+  "n_items": 40,
+  "n_rerun": 5,
+  "orders_per_item": 4,
+  "accuracy_debiased": 0.364,
+  "accuracy_ci_bootstrap": [
+    0.312,
+    0.419
+  ],
+  "accuracy_by_position": [
+    0.645,
+    0.165,
+    0.22,
+    0.425
+  ],
+  "chosen_letter_dist": [
+    0.557,
+    0.081,
+    0.108,
+    0.255
+  ],
+  "reorder_squish": 0.294,
+  "reorder_squish_ci": [
+    0.237,
+    0.35
+  ],
+  "mean_item_squish": 0.391,
+  "seconds": 242.1,
+  "items": [
+    {
+      "id": "world_religions:68",
+      "accuracy": 0.6,
+      "interventional": 0.25,
+      "observational": 0.325,
+      "squish": 0.325
+    },
+    {
+      "id": "world_religions:110",
+      "accuracy": 0.4,
+      "interventional": 0.5,
+      "observational": 0.425,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:108",
+      "accuracy": 0.75,
+      "interventional": 0.0,
+      "observational": 0.212,
+      "squish": 0.212
+    },
+    {
+      "id": "world_religions:170",
+      "accuracy": 0.2,
+      "interventional": 0.25,
+      "observational": 0.312,
+      "squish": 0.312
+    },
+    {
+      "id": "world_religions:109",
+      "accuracy": 0.8,
+      "interventional": 0.0,
+      "observational": 0.15,
+      "squish": 0.15
+    },
+    {
+      "id": "world_religions:95",
+      "accuracy": 0.4,
+      "interventional": 0.25,
+      "observational": 0.25,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:81",
+      "accuracy": 0.45,
+      "interventional": 0.5,
+      "observational": 0.4,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:45",
+      "accuracy": 0.2,
+      "interventional": 0.5,
+      "observational": 0.35,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:150",
+      "accuracy": 0.3,
+      "interventional": 0.25,
+      "observational": 0.15,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:158",
+      "accuracy": 0.4,
+      "interventional": 0.5,
+      "observational": 0.475,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:61",
+      "accuracy": 0.2,
+      "interventional": 0.25,
+      "observational": 0.45,
+      "squish": 0.45
+    },
+    {
+      "id": "world_religions:54",
+      "accuracy": 0.25,
+      "interventional": 0.5,
+      "observational": 0.5,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:153",
+      "accuracy": 0.25,
+      "interventional": 0.25,
+      "observational": 0.262,
+      "squish": 0.262
+    },
+    {
+      "id": "world_religions:47",
+      "accuracy": 0.4,
+      "interventional": 0.5,
+      "observational": 0.35,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:140",
+      "accuracy": 0.35,
+      "interventional": 0.25,
+      "observational": 0.55,
+      "squish": 0.55
+    },
+    {
+      "id": "world_religions:59",
+      "accuracy": 0.25,
+      "interventional": 0.25,
+      "observational": 0.1,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:94",
+      "accuracy": 0.3,
+      "interventional": 0.5,
+      "observational": 0.475,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:29",
+      "accuracy": 0.25,
+      "interventional": 0.25,
+      "observational": 0.225,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:131",
+      "accuracy": 0.15,
+      "interventional": 0.5,
+      "observational": 0.5,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:146",
+      "accuracy": 0.1,
+      "interventional": 0.0,
+      "observational": 0.1,
+      "squish": 0.1
+    },
+    {
+      "id": "world_religions:32",
+      "accuracy": 0.3,
+      "interventional": 0.25,
+      "observational": 0.5,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:144",
+      "accuracy": 0.3,
+      "interventional": 0.25,
+      "observational": 0.55,
+      "squish": 0.55
+    },
+    {
+      "id": "world_religions:82",
+      "accuracy": 0.8,
+      "interventional": 0.0,
+      "observational": 0.2,
+      "squish": 0.2
+    },
+    {
+      "id": "world_religions:34",
+      "accuracy": 0.25,
+      "interventional": 0.5,
+      "observational": 0.5,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:48",
+      "accuracy": 0.1,
+      "interventional": 0.25,
+      "observational": 0.425,
+      "squish": 0.425
+    },
+    {
+      "id": "world_religions:169",
+      "accuracy": 0.4,
+      "interventional": 0.25,
+      "observational": 0.438,
+      "squish": 0.438
+    },
+    {
+      "id": "world_religions:139",
+      "accuracy": 0.3,
+      "interventional": 0.25,
+      "observational": 0.237,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:99",
+      "accuracy": 0.45,
+      "interventional": 0.25,
+      "observational": 0.412,
+      "squish": 0.412
+    },
+    {
+      "id": "world_religions:92",
+      "accuracy": 0.25,
+      "interventional": 0.25,
+      "observational": 0.525,
+      "squish": 0.525
+    },
+    {
+      "id": "world_religions:51",
+      "accuracy": 0.55,
+      "interventional": 0.0,
+      "observational": 0.45,
+      "squish": 0.45
+    },
+    {
+      "id": "world_religions:159",
+      "accuracy": 0.45,
+      "interventional": 0.5,
+      "observational": 0.229,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:141",
+      "accuracy": 0.4,
+      "interventional": 0.25,
+      "observational": 0.463,
+      "squish": 0.463
+    },
+    {
+      "id": "world_religions:46",
+      "accuracy": 0.75,
+      "interventional": 0.0,
+      "observational": 0.25,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:96",
+      "accuracy": 0.4,
+      "interventional": 0.5,
+      "observational": 0.325,
+      "squish": 0.5
+    },
+    {
+      "id": "world_religions:2",
+      "accuracy": 0.15,
+      "interventional": 0.25,
+      "observational": 0.212,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:43",
+      "accuracy": 0.3,
+      "interventional": 0.25,
+      "observational": 0.25,
+      "squish": 0.25
+    },
+    {
+      "id": "world_religions:9",
+      "accuracy": 0.2,
+      "interventional": 0.25,
+      "observational": 0.287,
+      "squish": 0.287
+    },
+    {
+      "id": "world_religions:6",
+      "accuracy": 0.5,
+      "interventional": 0.25,
+      "observational": 0.363,
+      "squish": 0.363
+    },
+    {
+      "id": "world_religions:134",
+      "accuracy": 0.4,
+      "interventional": 0.25,
+      "observational": 0.4,
+      "squish": 0.4
+    },
+    {
+      "id": "world_religions:71",
+      "accuracy": 0.3,
+      "interventional": 0.75,
+      "observational": 0.6,
+      "squish": 0.75
+    }
+  ]
+}
