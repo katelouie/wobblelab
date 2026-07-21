@@ -18,13 +18,8 @@ from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from squishlab.benchmark import (
-    MCItem,
-    format_prompt,
-    orders_correct_at_each_position,
-    parse_answer,
-    presented_to_original,
-)
+from squishlab.benchmark import MCItem, parse_answer
+from squishlab.perturb import Perturbation, Presentation, ReorderOptions, render
 from squishlab.provider import Provider
 
 
@@ -47,6 +42,7 @@ class Outcome:
 
     correct: bool | None
     content: Hashable | None
+    kind: str | None = None  # which perturbation produced this (for per-kind squish)
     slot: int | None = None
     correct_slot: int | None = None
     n_slots: int | None = None
@@ -81,38 +77,44 @@ class MultipleChoiceTask:
     option count, so variable-length benchmarks (TruthfulQA-MC1) work unchanged.
     """
 
-    def __init__(self, scoring: str = "gen") -> None:
+    def __init__(
+        self, scoring: str = "gen", perturbations: list[Perturbation] | None = None
+    ) -> None:
         if scoring not in ("gen", "ll"):
             raise ValueError(f"scoring must be 'gen' or 'll', got {scoring!r}")
         self.scoring = scoring
         self.name = f"mc:{scoring}"
-        self.deterministic = (
-            scoring == "ll"
-        )  # log-likelihood argmax -> reruns collapse to 1
+        self.deterministic = scoring == "ll"  # ll argmax -> reruns collapse to 1
+        self._strategies = perturbations or [ReorderOptions()]
 
-    def perturbations(self, item: MCItem) -> list[tuple[int, ...]]:
-        return orders_correct_at_each_position(item)
+    def perturbations(self, item: MCItem) -> list[Presentation]:
+        pres: list[Presentation] = []
+        for strategy in self._strategies:
+            pres.extend(strategy.present(item))
+        return pres
 
     def run(
-        self, provider: Provider, item: MCItem, order: tuple[int, ...], seed: int
+        self, provider: Provider, item: MCItem, pres: Presentation, seed: int
     ) -> Outcome:
-        n = len(item.options)
-        prompt = format_prompt(item, order)
+        n = len(pres.options)
+        prompt = render(pres)
         if self.scoring == "ll":
             pos, _ = provider.rank_letters(prompt, n, seed=seed)
         else:
             pos = parse_answer(provider.ask(prompt, seed=seed), n)
-        content = presented_to_original(
-            pos, order
-        )  # chosen ORIGINAL index (order-invariant)
+        content = (
+            pres.origin[pos] if pos is not None and pos < len(pres.origin) else None
+        )
         return Outcome(
-            correct=(content == item.answer_idx) if pos is not None else False,
+            correct=(content == item.answer_idx) if content is not None else False,
             content=content,
-            slot=pos,
-            correct_slot=order.index(
-                item.answer_idx
-            ),  # where the answer sits in this order
-            n_slots=n,
+            kind=pres.kind,
+            # position bookkeeping only from the reorder set (it's what moves the answer)
+            slot=pos if pres.probes_position else None,
+            correct_slot=pres.origin.index(item.answer_idx)
+            if pres.probes_position
+            else None,
+            n_slots=n if pres.probes_position else None,
         )
 
 

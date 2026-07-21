@@ -47,6 +47,9 @@ class ModelReport:
     chosen_distribution: tuple[float, ...] | None = (
         None  # which slot the model reaches for
     )
+    squish_by_kind: dict[str, float] = field(
+        default_factory=dict
+    )  # per perturbation kind
     provenance: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -62,6 +65,7 @@ class ModelReport:
             else None,
             "interventional_squish": round(self.interventional_squish, 3),
             "observational_squish": round(self.observational_squish, 3),
+            "squish_by_kind": {k: round(v, 3) for k, v in self.squish_by_kind.items()},
             "provenance": self.provenance,
         }
         if self.accuracy_by_position is not None:
@@ -87,6 +91,11 @@ class ModelReport:
         lines.append(
             f"- observational squish: {self.observational_squish:.1%} rerun instability"
         )
+        if len(self.squish_by_kind) > 1:
+            per_kind = " · ".join(
+                f"{k} {v:.0%}" for k, v in sorted(self.squish_by_kind.items())
+            )
+            lines.append(f"- squish by perturbation kind: {per_kind}")
         if self.accuracy_by_position is not None:
             k = len(self.accuracy_by_position)
             by_pos = "  ".join(
@@ -121,6 +130,7 @@ def evaluate(
     scoring: str = "gen",
     n_rerun: int = 5,
     boot_seed: int = 1,
+    seed_offset: int = 0,
 ) -> ModelReport:
     """Run one model on one benchmark and return its report.
 
@@ -144,16 +154,20 @@ def evaluate(
     slot_correct: dict[int, int] = {}
     slot_total: dict[int, int] = {}
     slot_chosen: dict[int, int] = {}
+    kind_total: dict[str, int] = {}
+    kind_flip: dict[str, int] = {}
     max_slots = 0
 
     for item in items:
-        modal_contents = []
+        modal_contents = []  # one modal content per presentation
+        pres_kinds = []  # the kind of each presentation, aligned with modal_contents
         correct = 0
         graded = 0
-        for pert in task.perturbations(item):
+        for pres in task.perturbations(item):
             contents = []
+            kind = getattr(pres, "kind", "perturbation")
             for s in range(rerun):
-                o = task.run(provider, item, pert, s)
+                o = task.run(provider, item, pres, seed_offset * 1000 + s)
                 if o.correct is not None:
                     graded += 1
                     correct += int(o.correct)
@@ -172,12 +186,19 @@ def evaluate(
             mc, frac = modal(contents)
             obs_terms.append(1 - frac if contents else 0.0)  # instability across reruns
             modal_contents.append(mc)
+            pres_kinds.append(kind)
         if graded:
             per_item_acc.append(correct / graded)
-        _, content_frac = modal(modal_contents)
+        # this item's dominant answer, and how often each perturbation kind knocks it off
+        reference, content_frac = modal(modal_contents)
         per_item_interv.append(
             1 - content_frac
         )  # 0 = same content across all perturbations
+        if reference is not None:
+            for kind, mc in zip(pres_kinds, modal_contents):
+                kind_total[kind] = kind_total.get(kind, 0) + 1
+                if mc != reference:
+                    kind_flip[kind] = kind_flip.get(kind, 0) + 1
 
     accuracy = sum(per_item_acc) / len(per_item_acc) if per_item_acc else None
     acc_ci = (
@@ -191,6 +212,9 @@ def evaluate(
     )
     interventional = sum(per_item_interv) / len(per_item_interv)
     observational = sum(obs_terms) / len(obs_terms) if obs_terms else 0.0
+    squish_by_kind = {
+        k: kind_flip.get(k, 0) / kind_total[k] for k in kind_total if kind_total[k]
+    }
 
     acc_by_pos = pos_swing = chosen_dist = None
     if slot_total and max_slots:
@@ -218,10 +242,12 @@ def evaluate(
         accuracy_by_position=acc_by_pos,
         position_swing=pos_swing,
         chosen_distribution=chosen_dist,
+        squish_by_kind=squish_by_kind,
         provenance={
             "config": provider.config(),
             "task": task.name,
             "boot_seed": boot_seed,
+            "seed_offset": seed_offset,
         },
     )
 
@@ -247,3 +273,50 @@ def compare_markdown(reports: list[ModelReport]) -> str:
         )
 
     return header + "".join(cell(r) for r in reports)
+
+
+def score_stability(
+    provider: Provider,
+    items: list,
+    *,
+    n_runs: int = 5,
+    scoring: str = "gen",
+    benchmark: str = "benchmark",
+    **kwargs,
+) -> dict:
+    """Pillar 1: run the WHOLE benchmark ``n_runs`` times and report the run-to-run spread of
+    the aggregate score — the variance a non-deterministic model injects into "the number".
+
+    Each run uses a fresh seed offset, so a sampling model (``scoring="gen"``) genuinely
+    re-samples and the score moves; a deterministic one (``scoring="ll"``) reproduces exactly,
+    which is itself the honest answer (its run-to-run variance is zero). Report a score as
+    ``mean ± spread`` across runs, never as a lone point. Note the aggregate is often far more
+    stable than individual answers — the wobble lives per-item (observational squish), which is
+    why both numbers matter.
+    """
+    runs = []
+    for r in range(n_runs):
+        rep = evaluate(
+            provider,
+            items,
+            scoring=scoring,
+            benchmark=benchmark,
+            seed_offset=r + 1,
+            **kwargs,
+        )
+        runs.append(rep.accuracy)
+    graded = [a for a in runs if a is not None]
+    mean = sum(graded) / len(graded) if graded else None
+    if len(graded) > 1:
+        var = sum((a - mean) ** 2 for a in graded) / len(graded)
+        std = var**0.5
+    else:
+        std = 0.0
+    return {
+        "runs": runs,
+        "mean": mean,
+        "std": std,
+        "spread": (max(graded) - min(graded)) if graded else None,
+        "n_runs": n_runs,
+        "scoring": scoring,
+    }

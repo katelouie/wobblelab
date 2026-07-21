@@ -11,11 +11,14 @@ import pytest
 from squishlab import (
     MockProvider,
     MultipleChoiceTask,
+    RephraseInstruction,
+    ReorderOptions,
     always_position,
     compare,
     compare_markdown,
     evaluate,
     picks_option_containing,
+    score_stability,
 )
 from squishlab.benchmark import MCItem
 
@@ -147,3 +150,58 @@ def test_evaluate_rejects_bad_scoring_and_empty():
         evaluate(MockProvider(always_position(0)), ITEMS, scoring="bogus")
     with pytest.raises(ValueError):
         evaluate(MockProvider(always_position(0)), [], scoring="ll")
+
+
+# --- Pillar 2: per-kind squish (a model solid under reorder but fragile under rephrasing) ---
+
+# Answer is NOT at slot 0, so "always A" under the rephrased instruction lands on a wrong
+# option and flips content; under the default (reorder) instruction the model finds CORRECT.
+KIND_ITEMS = [
+    MCItem(
+        id=f"k{i}",
+        question=f"Q{i}?",
+        options=("w0", "w1", "CORRECT", "w3"),
+        answer_idx=2,
+    )
+    for i in range(6)
+]
+
+
+def _fragile_under_rephrase(prompt, seed):
+    if "Answer with only the letter" in prompt:  # reorder / canonical framing
+        return picks_option_containing("CORRECT")(prompt, seed)
+    return 0  # any reworded instruction -> blindly answer "A"
+
+
+def test_squish_is_broken_out_by_perturbation_kind():
+    task = MultipleChoiceTask(
+        "ll", perturbations=[ReorderOptions(), RephraseInstruction()]
+    )
+    r = evaluate(MockProvider(_fragile_under_rephrase), KIND_ITEMS, task=task)
+    assert set(r.squish_by_kind) == {"reorder", "rephrase"}
+    assert r.squish_by_kind["reorder"] == pytest.approx(0.0)  # steady under reordering
+    assert r.squish_by_kind["rephrase"] == pytest.approx(
+        1.0
+    )  # flips every time on reword
+    # the report surfaces the split
+    assert "squish by perturbation kind" in r.to_markdown()
+
+
+def test_default_task_reports_single_reorder_kind():
+    r = evaluate(MockProvider(picks_option_containing("CORRECT")), ITEMS, scoring="ll")
+    assert set(r.squish_by_kind) == {"reorder"}
+
+
+# --- Pillar 1: run-to-run variance from nondeterminism ---
+
+
+def test_score_stability_structure_and_determinism():
+    # A MockProvider ignores the seed, so it's deterministic -> zero run-to-run variance,
+    # which is the honest answer, and the structure must still be right.
+    out = score_stability(
+        MockProvider(picks_option_containing("CORRECT")), ITEMS, n_runs=4, scoring="ll"
+    )
+    assert out["n_runs"] == 4 and len(out["runs"]) == 4
+    assert out["std"] == pytest.approx(0.0)
+    assert out["spread"] == pytest.approx(0.0)
+    assert out["mean"] == pytest.approx(1.0)  # perfect model, every run

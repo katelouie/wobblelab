@@ -7,11 +7,20 @@ from squishlab.provider import (
     always_position,
     picks_option_containing,
 )
+from squishlab.perturb import (
+    ParaphraseWithModel,
+    Perturbation,
+    Presentation,
+    RephraseInstruction,
+    ReorderOptions,
+    TranslateWithModel,
+)
 from squishlab.report import (
     ModelReport,
     compare,
     compare_markdown,
     evaluate,
+    score_stability,
 )
 from squishlab.squish import model_squish, squish_score
 from squishlab.task import MultipleChoiceTask, Outcome, Task
@@ -34,10 +43,17 @@ __all__ = [
     "Task",
     "Outcome",
     "MultipleChoiceTask",
+    "Perturbation",
+    "Presentation",
+    "ReorderOptions",
+    "RephraseInstruction",
+    "ParaphraseWithModel",
+    "TranslateWithModel",
     "ModelReport",
     "evaluate",
     "compare",
     "compare_markdown",
+    "score_stability",
     "wilson_ci",
     "newcombe_diff_ci",
     "confident_shift",
