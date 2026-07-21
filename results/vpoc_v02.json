@@ -1,0 +1,804 @@
+{
+  "version": "vPOC-v0.2",
+  "quantization": "Q8_0",
+  "config": {
+    "model": "qwen3.5:0.8b",
+    "url": "http://localhost:11434/api/chat",
+    "options": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 4
+    },
+    "think": false
+  },
+  "n_rerun": 150,
+  "n_para": 60,
+  "seed_scheme": "explicit 0..N-1 per prompt",
+  "disp_threshold": 0.15,
+  "margin_threshold": 0.6,
+  "margin_default": "margin_max (worst-case point) with Newcombe CI",
+  "seconds": 744.8,
+  "results": [
+    {
+      "name": "water_wet",
+      "question": "Is water wet?",
+      "yes": 141,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.94,
+      "dispersion": 0.06,
+      "disp_ci": [
+        0.032,
+        0.11
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Water's wet, right?",
+          "p_yes": 0.783,
+          "delta": -0.157,
+          "abs_delta": 0.15666666666666662,
+          "ci": [
+            -0.279,
+            -0.058
+          ],
+          "confident_shift": 0.058,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Is it the case that water is wet?",
+          "p_yes": 0.833,
+          "delta": -0.107,
+          "abs_delta": 0.10666666666666658,
+          "ci": [
+            -0.224,
+            -0.018
+          ],
+          "confident_shift": 0.018,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you say water is wet?",
+          "p_yes": 0.833,
+          "delta": -0.107,
+          "abs_delta": 0.10666666666666658,
+          "ci": [
+            -0.224,
+            -0.018
+          ],
+          "confident_shift": 0.018,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is water something that's wet?",
+          "p_yes": 0.967,
+          "delta": 0.027,
+          "abs_delta": 0.026666666666666727,
+          "ci": [
+            -0.058,
+            0.082
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is H2O wet?",
+          "p_yes": 0.833,
+          "delta": -0.107,
+          "abs_delta": 0.10666666666666658,
+          "ci": [
+            -0.224,
+            -0.018
+          ],
+          "confident_shift": 0.018,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.843,
+      "margin_mean": 0.899,
+      "margin_max_ci": 0.942,
+      "margin_ci": [
+        0.721,
+        0.942
+      ],
+      "hotspot": {
+        "type": "casual",
+        "text": "Water's wet, right?",
+        "delta": -0.157,
+        "confident": true
+      },
+      "quadrant": "SOLID",
+      "disp_unresolved": false,
+      "margin_unresolved": false,
+      "unresolved": false
+    },
+    {
+      "name": "hotdog_sandwich",
+      "question": "Is a hotdog a sandwich?",
+      "yes": 134,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.893,
+      "dispersion": 0.107,
+      "disp_ci": [
+        0.067,
+        0.166
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Is a hot dog basically a sandwich?",
+          "p_yes": 0.717,
+          "delta": -0.177,
+          "abs_delta": 0.17666666666666664,
+          "ci": [
+            -0.307,
+            -0.062
+          ],
+          "confident_shift": 0.062,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Does a hot dog satisfy the definition of a sandwich?",
+          "p_yes": 0.75,
+          "delta": -0.143,
+          "abs_delta": 0.1433333333333333,
+          "ci": [
+            -0.272,
+            -0.034
+          ],
+          "confident_shift": 0.034,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you consider a hot dog a sandwich?",
+          "p_yes": 0.717,
+          "delta": -0.177,
+          "abs_delta": 0.17666666666666664,
+          "ci": [
+            -0.307,
+            -0.062
+          ],
+          "confident_shift": 0.062,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is a hotdog a type of sandwich?",
+          "p_yes": 0.9,
+          "delta": 0.007,
+          "abs_delta": 0.00666666666666671,
+          "ci": [
+            -0.102,
+            0.087
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is a frankfurter a sandwich?",
+          "p_yes": 0.5,
+          "delta": -0.393,
+          "abs_delta": 0.3933333333333333,
+          "ci": [
+            -0.522,
+            -0.257
+          ],
+          "confident_shift": 0.257,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.607,
+      "margin_mean": 0.821,
+      "margin_max_ci": 0.743,
+      "margin_ci": [
+        0.478,
+        0.743
+      ],
+      "hotspot": {
+        "type": "lexical",
+        "text": "Is a frankfurter a sandwich?",
+        "delta": -0.393,
+        "confident": true
+      },
+      "quadrant": "SOLID",
+      "disp_unresolved": true,
+      "margin_unresolved": true,
+      "unresolved": true
+    },
+    {
+      "name": "seven_prime",
+      "question": "Is 7 a prime number?",
+      "yes": 137,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.913,
+      "dispersion": 0.087,
+      "disp_ci": [
+        0.051,
+        0.143
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Is 7 prime?",
+          "p_yes": 0.817,
+          "delta": -0.097,
+          "abs_delta": 0.09666666666666668,
+          "ci": [
+            -0.218,
+            -0.001
+          ],
+          "confident_shift": 0.001,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Is the integer 7 a prime number?",
+          "p_yes": 0.933,
+          "delta": 0.02,
+          "abs_delta": 0.020000000000000018,
+          "ci": [
+            -0.079,
+            0.089
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you say 7 is prime?",
+          "p_yes": 0.683,
+          "delta": -0.23,
+          "abs_delta": 0.22999999999999998,
+          "ci": [
+            -0.361,
+            -0.112
+          ],
+          "confident_shift": 0.112,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is 7 among the prime numbers?",
+          "p_yes": 0.8,
+          "delta": -0.113,
+          "abs_delta": 0.11333333333333329,
+          "ci": [
+            -0.236,
+            -0.014
+          ],
+          "confident_shift": 0.014,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is seven a prime number?",
+          "p_yes": 0.717,
+          "delta": -0.197,
+          "abs_delta": 0.19666666666666666,
+          "ci": [
+            -0.326,
+            -0.084
+          ],
+          "confident_shift": 0.084,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.77,
+      "margin_mean": 0.869,
+      "margin_max_ci": 0.888,
+      "margin_ci": [
+        0.639,
+        0.888
+      ],
+      "hotspot": {
+        "type": "hedge",
+        "text": "Would you say 7 is prime?",
+        "delta": -0.23,
+        "confident": true
+      },
+      "quadrant": "SOLID",
+      "disp_unresolved": false,
+      "margin_unresolved": false,
+      "unresolved": false
+    },
+    {
+      "name": "zero_even",
+      "question": "Is zero an even number?",
+      "yes": 127,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.847,
+      "dispersion": 0.153,
+      "disp_ci": [
+        0.104,
+        0.22
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Is 0 even?",
+          "p_yes": 0.8,
+          "delta": -0.047,
+          "abs_delta": 0.046666666666666634,
+          "ci": [
+            -0.174,
+            0.059
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Is the integer zero an even number?",
+          "p_yes": 0.533,
+          "delta": -0.313,
+          "abs_delta": 0.31333333333333335,
+          "ci": [
+            -0.447,
+            -0.176
+          ],
+          "confident_shift": 0.176,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you say zero is even?",
+          "p_yes": 0.533,
+          "delta": -0.313,
+          "abs_delta": 0.31333333333333335,
+          "ci": [
+            -0.447,
+            -0.176
+          ],
+          "confident_shift": 0.176,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is zero among the even numbers?",
+          "p_yes": 0.583,
+          "delta": -0.263,
+          "abs_delta": 0.2633333333333333,
+          "ci": [
+            -0.399,
+            -0.13
+          ],
+          "confident_shift": 0.13,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is 0 an even number?",
+          "p_yes": 0.7,
+          "delta": -0.147,
+          "abs_delta": 0.14666666666666672,
+          "ci": [
+            -0.281,
+            -0.026
+          ],
+          "confident_shift": 0.026,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.687,
+      "margin_mean": 0.783,
+      "margin_max_ci": 0.824,
+      "margin_ci": [
+        0.553,
+        0.824
+      ],
+      "hotspot": {
+        "type": "formal",
+        "text": "Is the integer zero an even number?",
+        "delta": -0.313,
+        "confident": true
+      },
+      "quadrant": "NOISY-BUT-SURE",
+      "disp_unresolved": true,
+      "margin_unresolved": true,
+      "unresolved": true
+    },
+    {
+      "name": "tomato_fruit",
+      "question": "Is a tomato a fruit?",
+      "yes": 127,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.847,
+      "dispersion": 0.153,
+      "disp_ci": [
+        0.104,
+        0.22
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "So is a tomato a fruit?",
+          "p_yes": 0.85,
+          "delta": 0.003,
+          "abs_delta": 0.0033333333333332993,
+          "ci": [
+            -0.118,
+            0.099
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Does a tomato meet the botanical definition of a fruit?",
+          "p_yes": 0.867,
+          "delta": 0.02,
+          "abs_delta": 0.020000000000000018,
+          "ci": [
+            -0.099,
+            0.112
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you call a tomato a fruit?",
+          "p_yes": 0.717,
+          "delta": -0.13,
+          "abs_delta": 0.13,
+          "ci": [
+            -0.264,
+            -0.011
+          ],
+          "confident_shift": 0.011,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is a tomato a type of fruit?",
+          "p_yes": 0.833,
+          "delta": -0.013,
+          "abs_delta": 0.013333333333333308,
+          "ci": [
+            -0.137,
+            0.086
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Are tomatoes fruits?",
+          "p_yes": 0.85,
+          "delta": 0.003,
+          "abs_delta": 0.0033333333333332993,
+          "ci": [
+            -0.118,
+            0.099
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.87,
+      "margin_mean": 0.966,
+      "margin_max_ci": 0.989,
+      "margin_ci": [
+        0.736,
+        0.989
+      ],
+      "hotspot": {
+        "type": "hedge",
+        "text": "Would you call a tomato a fruit?",
+        "delta": -0.13,
+        "confident": true
+      },
+      "quadrant": "NOISY-BUT-SURE",
+      "disp_unresolved": true,
+      "margin_unresolved": false,
+      "unresolved": true
+    },
+    {
+      "name": "pluto_planet",
+      "question": "Is Pluto a planet?",
+      "yes": 7,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.047,
+      "dispersion": 0.047,
+      "disp_ci": [
+        0.023,
+        0.093
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "So is Pluto a planet?",
+          "p_yes": 0.033,
+          "delta": -0.013,
+          "abs_delta": 0.013333333333333336,
+          "ci": [
+            -0.066,
+            0.07
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Is Pluto classified as a planet?",
+          "p_yes": 0.033,
+          "delta": -0.013,
+          "abs_delta": 0.013333333333333336,
+          "ci": [
+            -0.066,
+            0.07
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you say Pluto is a planet?",
+          "p_yes": 0.167,
+          "delta": 0.12,
+          "abs_delta": 0.12,
+          "ci": [
+            0.033,
+            0.236
+          ],
+          "confident_shift": 0.033,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is Pluto among the planets?",
+          "p_yes": 0.4,
+          "delta": 0.353,
+          "abs_delta": 0.35333333333333333,
+          "ci": [
+            0.23,
+            0.482
+          ],
+          "confident_shift": 0.23,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is Pluto one of the planets?",
+          "p_yes": 0.233,
+          "delta": 0.187,
+          "abs_delta": 0.18666666666666668,
+          "ci": [
+            0.086,
+            0.31
+          ],
+          "confident_shift": 0.086,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.647,
+      "margin_mean": 0.863,
+      "margin_max_ci": 0.77,
+      "margin_ci": [
+        0.518,
+        0.77
+      ],
+      "hotspot": {
+        "type": "reorder",
+        "text": "Is Pluto among the planets?",
+        "delta": 0.353,
+        "confident": true
+      },
+      "quadrant": "SOLID",
+      "disp_unresolved": false,
+      "margin_unresolved": true,
+      "unresolved": true
+    },
+    {
+      "name": "rain_tomorrow",
+      "question": "Will it rain tomorrow?",
+      "yes": 63,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.42,
+      "dispersion": 0.42,
+      "disp_ci": [
+        0.344,
+        0.5
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Gonna rain tomorrow?",
+          "p_yes": 0.7,
+          "delta": 0.28,
+          "abs_delta": 0.27999999999999997,
+          "ci": [
+            0.132,
+            0.406
+          ],
+          "confident_shift": 0.132,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Is precipitation expected tomorrow?",
+          "p_yes": 0.45,
+          "delta": 0.03,
+          "abs_delta": 0.030000000000000027,
+          "ci": [
+            -0.113,
+            0.176
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Do you think it'll rain tomorrow?",
+          "p_yes": 0.45,
+          "delta": 0.03,
+          "abs_delta": 0.030000000000000027,
+          "ci": [
+            -0.113,
+            0.176
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is rain coming tomorrow?",
+          "p_yes": 0.5,
+          "delta": 0.08,
+          "abs_delta": 0.08000000000000002,
+          "ci": [
+            -0.066,
+            0.224
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Will it be rainy tomorrow?",
+          "p_yes": 0.383,
+          "delta": -0.037,
+          "abs_delta": 0.036666666666666625,
+          "ci": [
+            -0.175,
+            0.111
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.72,
+      "margin_mean": 0.909,
+      "margin_max_ci": 0.868,
+      "margin_ci": [
+        0.594,
+        0.868
+      ],
+      "hotspot": {
+        "type": "casual",
+        "text": "Gonna rain tomorrow?",
+        "delta": 0.28,
+        "confident": true
+      },
+      "quadrant": "NOISY-BUT-SURE",
+      "disp_unresolved": false,
+      "margin_unresolved": true,
+      "unresolved": true
+    },
+    {
+      "name": "cereal_soup",
+      "question": "Is cereal a soup?",
+      "yes": 15,
+      "decided": 150,
+      "unparseable": 0,
+      "p_yes": 0.1,
+      "dispersion": 0.1,
+      "disp_ci": [
+        0.062,
+        0.158
+      ],
+      "paras": [
+        {
+          "type": "casual",
+          "text": "Is cereal basically soup?",
+          "p_yes": 0.25,
+          "delta": 0.15,
+          "abs_delta": 0.15,
+          "ci": [
+            0.041,
+            0.278
+          ],
+          "confident_shift": 0.041,
+          "unparseable": 0
+        },
+        {
+          "type": "formal",
+          "text": "Does cereal meet the definition of a soup?",
+          "p_yes": 0.25,
+          "delta": 0.15,
+          "abs_delta": 0.15,
+          "ci": [
+            0.041,
+            0.278
+          ],
+          "confident_shift": 0.041,
+          "unparseable": 0
+        },
+        {
+          "type": "hedge",
+          "text": "Would you call cereal a soup?",
+          "p_yes": 0.25,
+          "delta": 0.15,
+          "abs_delta": 0.15,
+          "ci": [
+            0.041,
+            0.278
+          ],
+          "confident_shift": 0.041,
+          "unparseable": 0
+        },
+        {
+          "type": "reorder",
+          "text": "Is cereal a type of soup?",
+          "p_yes": 0.183,
+          "delta": 0.083,
+          "abs_delta": 0.08333333333333331,
+          "ci": [
+            -0.014,
+            0.205
+          ],
+          "confident_shift": 0.0,
+          "unparseable": 0
+        },
+        {
+          "type": "lexical",
+          "text": "Is a bowl of cereal soup?",
+          "p_yes": 0.633,
+          "delta": 0.533,
+          "abs_delta": 0.5333333333333333,
+          "ci": [
+            0.394,
+            0.65
+          ],
+          "confident_shift": 0.394,
+          "unparseable": 0
+        }
+      ],
+      "margin_max": 0.467,
+      "margin_mean": 0.787,
+      "margin_max_ci": 0.606,
+      "margin_ci": [
+        0.35,
+        0.606
+      ],
+      "hotspot": {
+        "type": "lexical",
+        "text": "Is a bowl of cereal soup?",
+        "delta": 0.533,
+        "confident": true
+      },
+      "quadrant": "KNIFE-EDGE",
+      "disp_unresolved": true,
+      "margin_unresolved": true,
+      "unresolved": true
+    }
+  ]
+}

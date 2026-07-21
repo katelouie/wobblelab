@@ -1,0 +1,140 @@
+{
+  "source": "vpoc_v02.json",
+  "model_headline": {
+    "mean_squish": 0.321,
+    "median_squish": 0.309,
+    "max_squish": 0.533,
+    "n_prompts": 8,
+    "worst_offenders": [
+      {
+        "name": "cereal_soup",
+        "squish": 0.533,
+        "driver": "interventional"
+      },
+      {
+        "name": "hotdog_sandwich",
+        "squish": 0.393,
+        "driver": "interventional"
+      },
+      {
+        "name": "pluto_planet",
+        "squish": 0.353,
+        "driver": "interventional"
+      }
+    ]
+  },
+  "scored": [
+    {
+      "squish": 0.533,
+      "interventional": 0.533,
+      "observational": null,
+      "decidable": false,
+      "driver": "interventional",
+      "squish_ci": [
+        0.394,
+        0.65
+      ],
+      "name": "cereal_soup",
+      "answer": null,
+      "hotspot_type": "lexical"
+    },
+    {
+      "squish": 0.393,
+      "interventional": 0.393,
+      "observational": null,
+      "decidable": false,
+      "driver": "interventional",
+      "squish_ci": [
+        0.257,
+        0.522
+      ],
+      "name": "hotdog_sandwich",
+      "answer": null,
+      "hotspot_type": "lexical"
+    },
+    {
+      "squish": 0.353,
+      "interventional": 0.353,
+      "observational": 0.094,
+      "decidable": true,
+      "driver": "interventional",
+      "squish_ci": [
+        0.23,
+        0.482
+      ],
+      "name": "pluto_planet",
+      "answer": "no",
+      "hotspot_type": "reorder"
+    },
+    {
+      "squish": 0.313,
+      "interventional": 0.313,
+      "observational": 0.306,
+      "decidable": true,
+      "driver": "interventional",
+      "squish_ci": [
+        0.208,
+        0.447
+      ],
+      "name": "zero_even",
+      "answer": "yes",
+      "hotspot_type": "formal"
+    },
+    {
+      "squish": 0.306,
+      "interventional": 0.13,
+      "observational": 0.306,
+      "decidable": true,
+      "driver": "observational",
+      "squish_ci": [
+        0.208,
+        0.44
+      ],
+      "name": "tomato_fruit",
+      "answer": "yes",
+      "hotspot_type": "hedge"
+    },
+    {
+      "squish": 0.28,
+      "interventional": 0.28,
+      "observational": null,
+      "decidable": false,
+      "driver": "interventional",
+      "squish_ci": [
+        0.132,
+        0.406
+      ],
+      "name": "rain_tomorrow",
+      "answer": null,
+      "hotspot_type": "casual"
+    },
+    {
+      "squish": 0.23,
+      "interventional": 0.23,
+      "observational": 0.174,
+      "decidable": true,
+      "driver": "interventional",
+      "squish_ci": [
+        0.112,
+        0.361
+      ],
+      "name": "seven_prime",
+      "answer": "yes",
+      "hotspot_type": "hedge"
+    },
+    {
+      "squish": 0.157,
+      "interventional": 0.157,
+      "observational": 0.12,
+      "decidable": true,
+      "driver": "interventional",
+      "squish_ci": [
+        0.064,
+        0.279
+      ],
+      "name": "water_wet",
+      "answer": "yes",
+      "hotspot_type": "casual"
+    }
+  ]
+}

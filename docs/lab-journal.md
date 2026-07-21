@@ -23,6 +23,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **D-004** | Interventional margin is **continuous shift-based**; plane default = **worst-case (`margin_max`)** within a prompt; model headline = **central tendency** across prompts; always compute `max`/`mean`/`max_ci`; not a user knob | A knife-edge is *defined* by the existence of a breaking rephrase → worst-case within-prompt; different aggregation levels want different stats (see 2026-07-20 entry) |
 | **D-005** | Everything carries CIs (Wilson on rates, Newcombe on shifts). Point for placement, CI for honesty; **CI straddling a threshold → `unresolved`**, not forced into a quadrant. Both axes identical. | A reliability tool must not report point estimates without error bars; N=30 thresholds were slicing sampling noise (F-004) |
 | **D-006** | **Typed paraphrase taxonomy** (casual / formal / hedge / reorder / lexical), constant K per battery | Makes the hot-spot diagnostic (*which kind* of change broke it) and keeps worst-case margins comparable |
+| **D-007** | **Squish score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional squish; rerun-variation is squish only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
 
 ## Findings ledger
 
@@ -35,6 +36,12 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-005** | **Genuine KNIFE-EDGES exist.** `pluto_planet` (disp 0.02, margin 0.58) and `cereal_soup` (disp 0.07, margin 0.47) are rock-solid on rerun but fragile to paraphrase — the exact phenomenon the two-axis design targets, and invisible to the observational axis alone. | vPOC v0.1 |
 | **F-006** | **`reorder` is the model's dominant fragility** (hot-spot for 4/8 prompts). Caveat: our reorder form is a stilted colon-fronting ("A planet: is Pluto one?"), so it's partly a paraphrase-quality artifact — D-006's worst-case/quality caveat, live. | vPOC v0.1 |
 | **F-007** | At N=60 / M=25, **all 8 points are `unresolved`** — the 95% CIs are too wide to confidently assign quadrants. The framework correctly refuses to over-claim. Under-powered; needs larger N/M or a continuous/deadzone treatment. | vPOC v0.1 |
+| **F-008** | **v0.1's "reorder dominates" was a paraphrase-quality artifact.** With natural reorders, `reorder` drops from 4/8 hot-spots to **1/8**; fragility spreads across casual/lexical/hedge. Confirms F-006 and D-006's caveat — the framework self-corrected a false signal. | vPOC v0.2 |
+| **F-009** | **`pluto_planet` was a *partial* artifact.** Its v0.1 "knife-edge" (margin 0.58) relaxed to borderline-SOLID (0.65) once the stilted reorder was replaced. Not a clean knife-edge; the colon-fronting was inflating its fragility. | vPOC v0.2 |
+| **F-010** | **`cereal_soup` is the robust knife-edge.** Survives natural reorders *and* the power bump: near-unanimous "no" on rerun (disp 0.10) yet a lexical rephrase ("Is a bowl of cereal soup?") shifts it (margin 0.47, `max_ci` 0.61 = confident). The clearest confirmed two-axis payoff. | vPOC v0.2 |
+| **F-011** | Even at N=150 / M=60, only **2/8** points resolve — prompts cluster right at the thresholds (margin ≈ 0.60, disp ≈ 0.15), which slice the densest band. Points to data-derived thresholds or continuous confident-membership, not a fixed grid. | vPOC v0.2 |
+| **F-012** | **The model has a ~5–15% rerun-noise floor** even on rock-solid facts (water 0.06, pluto 0.05, prime 0.09). So a *fixed* dispersion threshold will always cut through the "solid" cluster — the hard grid was the wrong abstraction (→ the continuous squish score, D-007). | vPOC v0.2 |
+| **F-013** | **Appropriate uncertainty and epistemic instability are behaviorally indistinguishable** from outputs alone: a decidable fact the model has lost its grip on and a genuinely undecidable question produce the *same* output distribution (phrasing-stable dispersion). Only external ground truth separates them — which is why D-007's decidability gate is necessary, not a convenience. | reasoning → D-007 |
 
 ---
 
@@ -167,6 +174,82 @@ aggregations + hot-spot; Wilson/Newcombe CIs on both axes; typed paraphrases
   is more samples (or a continuous plane with deadzones), not a different metric.
 - `margin_max_ci` earned its place: it separates *confident* fragility (hotdog/pluto/cereal,
   significant hot-spots) from *maybe-noise* (`tomato_fruit`, hot-spot `ns`, max_ci 1.00).
+
+## 2026-07-20 — vPOC v0.2 (natural reorders + power)
+
+N=150 / M=60, 3,600 calls, 12.4 min. Two changes: reorder paraphrases rewritten as
+natural restructurings (killing the colon-fronting confound), and N/M bumped ~2.5× to
+halve the CIs. `results/vpoc_v02.json`, `results/squish_plane_v02.png`.
+
+The headline: **the framework caught and corrected a false positive from our own v0.1.**
+
+- **F-008 — reorder was an artifact.** With fluent reorders, `reorder` fell from 4/8
+  hot-spots to 1/8; the model is *not* specially fragile to restructuring, it was
+  fragile to the awkward phrasing we fed it. The worst-case metric's D-006 caveat
+  (paraphrase quality is load-bearing) played out exactly as predicted, and the
+  auditable hot-spot + a follow-up run fixed it.
+- **F-009 — pluto downgraded.** Its v0.1 knife-edge was partly the same artifact:
+  natural reorder → margin 0.58 → 0.65, borderline-SOLID now, not a clean knife-edge.
+- **F-010 — cereal is the real one.** It's the single prompt that stays bottom-left
+  through both the paraphrase fix and the power bump: solid on rerun, breaks on a
+  lexical rephrase, confident (`max_ci` 0.61). If we publish one example of "looks
+  decided, isn't," it's `cereal_soup`.
+- **Power paid off, partly.** CIs visibly tighter (~halved); `water_wet` and
+  `seven_prime` now plot **filled** (resolved SOLID). But **F-011**: 6/8 still hollow,
+  because the point cloud piles up right on the threshold lines. The remaining problem
+  isn't noise now, it's that the *thresholds* (0.15 / 0.60) sit in the densest part of
+  the data. More N won't fix that; rethinking the thresholds will.
+- Net picture of this model: **mostly solid, with diffuse mild fragility and one true
+  knife-edge.** v0.1 over-stated the squish (bad paraphrases inflated it); v0.2 is the
+  honest version.
+
+## 2026-07-20 — the squish score + the decidability gate (D-007)
+
+F-011 forced the question: the hard quadrant grid can't be decisive when the model's
+own **~10% rerun-noise floor** (F-012) sits right under the dispersion line and every
+point piles onto the thresholds. The fix isn't a better line, it's the continuous
+**squish score** from the original design (headline + factors + hot-spot).
+
+But combining the two axes surfaced a real fork: **they aren't symmetric squish.**
+
+- **Interventional margin-deficit `(1 − M)` is unconditional.** A meaning-preserving
+  rephrase should never move a factual answer, decidable or not. Always a defect.
+- **Dispersion is conditional.** Seed-driven variation is a defect *iff there's a fact
+  to be stable about*. On an undecidable prompt it's appropriate calibration.
+
+The deep reason (**F-013**): you *cannot* tell appropriate uncertainty from epistemic
+instability from outputs alone. A decidable fact the model has lost its grip on
+(50/50, phrasing-stable) and a genuinely undecidable question produce the identical
+output distribution. Only external ground truth distinguishes them. So a naive
+`D + (1−M)` mis-scores `rain_tomorrow` (honestly uncertain) as maximally squishy, and
+a pure-`(1−M)` misses seed-squish on decidable facts (a 50/50 "is water wet" would read
+as perfectly reliable). Neither works.
+
+**Decision (D-007):** `squish = max( 1 − margin , [decidable]·2·dispersion )`. The
+interventional channel always counts; dispersion is **gated by a decidability label**
+(part of the supervision we already committed to), worst-case combined, decomposition
+kept. Roadmap-consistent: supervised → full gated score; unsupervised/discovered →
+fall back to the unconditionally-safe `1 − margin`, dispersion reported raw and un-gated.
+
+**It behaves.** Applied to the v0.2 data (pure post-processing, no re-run):
+
+```
+cereal_soup     0.53  interv (lexical)    rain_tomorrow   0.28  interv (gated: -- )
+hotdog_sandwich 0.39  interv (lexical)    seven_prime     0.23  interv
+pluto_planet    0.35  interv (reorder)    water_wet       0.16  interv
+zero_even       0.31  both  (~tie)        model headline: mean 0.32 / median 0.31
+tomato_fruit    0.31  OBSERVATIONAL       ── the only rerun-driven one
+```
+
+`rain` correctly drops out of the danger zone (dispersion gated off); `tomato` correctly
+*rises* on dispersion (it wobbles 15% about a botanical fact — real squish that
+pure-interventional would have missed). Both failure modes handled.
+
+Built: `src/squishlab/squish.py` (`squish_score` + `model_squish`, tested,
+`tests/test_squish.py` 6/6), battery gained conservative `answer` labels (hotdog /
+cereal / rain → null), and **scoring is a separate post-processing step**
+(`experiments/score.py`) so we can re-score without re-running the model. Artifacts:
+`results/squish_scores_v02.{png,json}`.
 
 ---
 

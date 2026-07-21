@@ -1,14 +1,17 @@
-"""squishlab vPOC v0.1 -- the squish plane, done honestly.
+"""squishlab vPOC v0.2 -- the squish plane, done honestly.
 
-Changes from v0 (see docs/lab-journal.md, entry 2026-07-20):
-  - continuous shift-based interventional margin (max / mean / max_ci), not majority-flip
-  - Wilson CIs on dispersion, Newcombe CIs on every paraphrase shift
-  - typed paraphrase taxonomy (casual / formal / hedge / reorder / lexical) -> hot-spots
-  - both axes carry 95% CI error bars; a point whose CI straddles a threshold is UNRESOLVED
-  - N bumped (60 canonical / 25 per paraphrase)
+v0.2 changes (see docs/lab-journal.md, 2026-07-20):
+  - reorder paraphrases rewritten as natural restructurings (killed the stilted
+    colon-fronting that confounded the v0.1 "reorder dominates" finding, F-006)
+  - power bumped hard (150 canonical / 60 per paraphrase) to tighten the CIs and
+    test whether the pluto/cereal knife-edges (F-005) survive
+
+Inherited from v0.1: continuous shift-based margin (max / mean / max_ci) with a
+worst-case default, Wilson/Newcombe CIs on both axes, typed paraphrases, hot-spots,
+and UNRESOLVED flags for points whose CI straddles a threshold.
 
 Sampling config is the controlled, portable set (squishlab.client.CONTROLLED),
-NOT ollama's Modelfile defaults. Everything logged into results/vpoc_v01.json.
+NOT ollama's Modelfile defaults. Everything logged into results/vpoc_v02.json.
 
 Run:  python experiments/vpoc_real.py
 """
@@ -30,8 +33,9 @@ from squishlab import OllamaClient, confident_shift, newcombe_diff_ci, wilson_ci
 
 MODEL = "qwen3.5:0.8b"
 QUANT = "Q8_0"
-N_RERUN = 60  # canonical reruns (seeds 0..N-1)
-N_PARA = 25  # reruns per paraphrase
+VERSION = "v0.2"
+N_RERUN = 150  # canonical reruns (seeds 0..N-1)
+N_PARA = 60  # reruns per paraphrase
 DISP_T = 0.15
 MARGIN_T = 0.60
 SUFFIX = " Reply with only the single word yes or no."
@@ -43,81 +47,89 @@ client = OllamaClient(MODEL)
 BATTERY = {
     "water_wet": {
         "q": "Is water wet?",
+        "answer": "yes",
         "paras": [
             ("casual", "Water's wet, right?"),
             ("formal", "Is it the case that water is wet?"),
             ("hedge", "Would you say water is wet?"),
-            ("reorder", "Wet: is that what water is?"),
+            ("reorder", "Is water something that's wet?"),
             ("lexical", "Is H2O wet?"),
         ],
     },
     "hotdog_sandwich": {
         "q": "Is a hotdog a sandwich?",
+        "answer": None,  # definitional dispute -> undecidable
         "paras": [
             ("casual", "Is a hot dog basically a sandwich?"),
             ("formal", "Does a hot dog satisfy the definition of a sandwich?"),
             ("hedge", "Would you consider a hot dog a sandwich?"),
-            ("reorder", "A sandwich: is that what a hot dog is?"),
+            ("reorder", "Is a hotdog a type of sandwich?"),
             ("lexical", "Is a frankfurter a sandwich?"),
         ],
     },
     "seven_prime": {
         "q": "Is 7 a prime number?",
+        "answer": "yes",
         "paras": [
             ("casual", "Is 7 prime?"),
             ("formal", "Is the integer 7 a prime number?"),
             ("hedge", "Would you say 7 is prime?"),
-            ("reorder", "Prime: is 7 one?"),
+            ("reorder", "Is 7 among the prime numbers?"),
             ("lexical", "Is seven a prime number?"),
         ],
     },
     "zero_even": {
         "q": "Is zero an even number?",
+        "answer": "yes",
         "paras": [
             ("casual", "Is 0 even?"),
             ("formal", "Is the integer zero an even number?"),
             ("hedge", "Would you say zero is even?"),
-            ("reorder", "Even: is zero one of those?"),
+            ("reorder", "Is zero among the even numbers?"),
             ("lexical", "Is 0 an even number?"),
         ],
     },
     "tomato_fruit": {
         "q": "Is a tomato a fruit?",
+        "answer": "yes",  # botanically a fruit
         "paras": [
             ("casual", "So is a tomato a fruit?"),
             ("formal", "Does a tomato meet the botanical definition of a fruit?"),
             ("hedge", "Would you call a tomato a fruit?"),
-            ("reorder", "A fruit: is that what a tomato is?"),
+            ("reorder", "Is a tomato a type of fruit?"),
             ("lexical", "Are tomatoes fruits?"),
         ],
     },
     "pluto_planet": {
         "q": "Is Pluto a planet?",
+        "answer": "no",  # not a planet under the current IAU definition
         "paras": [
             ("casual", "So is Pluto a planet?"),
             ("formal", "Is Pluto classified as a planet?"),
             ("hedge", "Would you say Pluto is a planet?"),
-            ("reorder", "A planet: is Pluto one?"),
+            ("reorder", "Is Pluto among the planets?"),
             ("lexical", "Is Pluto one of the planets?"),
         ],
     },
     "rain_tomorrow": {
         "q": "Will it rain tomorrow?",
+        "answer": None,  # empirically undetermined -> undecidable
         "paras": [
             ("casual", "Gonna rain tomorrow?"),
             ("formal", "Is precipitation expected tomorrow?"),
             ("hedge", "Do you think it'll rain tomorrow?"),
-            ("reorder", "Tomorrow: will it rain?"),
+            ("reorder", "Is rain coming tomorrow?"),
             ("lexical", "Will it be rainy tomorrow?"),
         ],
     },
     "cereal_soup": {
         "q": "Is cereal a soup?",
+        "answer": None,  # meme/definitional -> undecidable
         "paras": [
             ("casual", "Is cereal basically soup?"),
             ("formal", "Does cereal meet the definition of a soup?"),
             ("hedge", "Would you call cereal a soup?"),
-            ("reorder", "A soup: is cereal one?"),
+            ("reorder", "Is cereal a type of soup?"),
             ("lexical", "Is a bowl of cereal soup?"),
         ],
     },
@@ -197,6 +209,7 @@ def measure(name: str, spec: dict) -> dict:
     return {
         "name": name,
         "question": spec["q"],
+        "answer": spec.get("answer"),
         "yes": y0,
         "decided": n0,
         "unparseable": u0,
@@ -290,7 +303,7 @@ def plot(rows, path: Path) -> None:
     )
     ax.set_ylabel("observational dispersion  →  noisier on rerun", color="#c9b79e")
     ax.set_title(
-        f"THE SQUISH PLANE v0.1  ·  {MODEL} ({QUANT})",
+        f"THE SQUISH PLANE {VERSION}  ·  {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",
@@ -335,9 +348,10 @@ def main() -> None:
 
     results_dir = Path(__file__).resolve().parent.parent / "results"
     results_dir.mkdir(exist_ok=True)
-    plot(rows, results_dir / "squish_plane_v01.png")
+    tag = VERSION.replace(".", "")
+    plot(rows, results_dir / f"squish_plane_{tag}.png")
     out = {
-        "version": "vPOC-v0.1",
+        "version": f"vPOC-{VERSION}",
         "quantization": QUANT,
         "config": client.config(),
         "n_rerun": N_RERUN,
@@ -349,9 +363,9 @@ def main() -> None:
         "seconds": round(time.time() - t0, 1),
         "results": rows,
     }
-    (results_dir / "vpoc_v01.json").write_text(json.dumps(out, indent=2))
+    (results_dir / f"vpoc_{tag}.json").write_text(json.dumps(out, indent=2))
     print(
-        f"\nwrote results/squish_plane_v01.png and results/vpoc_v01.json in {out['seconds']}s"
+        f"\nwrote results/squish_plane_{tag}.png and results/vpoc_{tag}.json in {out['seconds']}s"
     )
 
 
