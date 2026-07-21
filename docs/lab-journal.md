@@ -52,6 +52,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-019** | **Official Qwen3.5-0.8B numbers exist** (HF model card, non-thinking mode: MMLU-Pro 29.7, MMLU-Redux 48.5, C-Eval 46.4, MMMLU 34.1; thinking mode ~10–13 pts higher). Two sharp points: **(a)** Qwen's *own* recommended inference settings are `top_p 0.95 / top_k 20 / presence_penalty 1.5 / temp 1.0` = **ollama's Modelfile default verbatim** — so the config we dismissed as "ollama's packaging" (D-003) is Qwen's *official* one. There is no *neutral* config; even the official number is a config choice, which strengthens, not weakens, the point. **(b)** Official scores are log-likelihood + few-shot + full-precision + full-benchmark; ours is generation + zero-shot + Q8 + a 40-item slice — *not directly comparable*, and none of the official numbers carry a CI or a position-bias/squish breakdown. | web / model card |
 | **F-020** | **ollama's logprobs are top-20-capped but near-lossless for MC.** `top_logprobs` hard-caps at 20 (50+ → HTTP 400); it returns the top-N alternatives, not the full vocab softmax. But on a lettered-MC first token the distribution is so peaked that the top-20 captures **99.9%** of the mass, and candidate-letter coverage measured **0.95 at 0-shot / 1.00 at 5-shot** (few-shot format-anchoring closes the gap). When a letter falls outside top-20 its true prob is < e⁻⁹ ≈ 0.0001, so treating it as −∞ for the argmax is harmless. The `ll` scorer is effectively exact. | probe / harness |
 | **F-021** | **A 20-point spread from harness alone.** Same model, same 40 items: natural-position accuracy runs **0.30 → 0.50** across the four harnesses (`ll/0-shot` 0.50, `gen/0-shot` 0.41, `ll/5-shot` 0.38, `gen/5-shot` 0.30). Main effects: **scoring (ll−gen) +0.08** (reading the distribution beats sampling a letter), **shots (5−0) −0.12** (few-shot *hurts* this 0.8B, robustly across both scoring methods). So F-019's 36-vs-48.5 "gap" was mostly scoring-method + which-number-you-report, not capability: measured the official way (`ll`), our crude Q8 40-item slice brackets the official 48.5 (0.50 [0.35,0.65]). The leaderboard number is a *harness choice*, quantified. | harness |
+| **F-023** | **Config squish is small and localized on binary decisions — prediction confirmed.** Controlled full-softmax vs Qwen-recommended (top_p .95 / top_k 20 / presence 1.5), same 8-prompt battery, 150 reruns each: **mean dispersion 0.141 vs 0.140 (Δ −0.001)**, mean \|Δp_yes\| 0.019, **1/8** prompts with a Δp CI excluding zero, **0** majority flips, decidable accuracy 1.00 both. The lone confident shift is `pluto_planet` (dispersion 0.047 → **0.000**): truncation clips the residual minority mass on the one near-unanimous prompt, so "as it ships" makes the model look *slightly more* reliable exactly where it had a sliver of doubt. Pre-registered prediction (top_p/top_k barely truncate a 2-way split; presence can't touch the first token) held. Refines D-003: config squish is real but its bite scales with the *width of the output tail* — negligible on binary yes/no, and expected to matter on the MC benchmark's chosen-letter tail (where truncation would nudge `gen` toward the more-A-biased argmax, linking to F-022). | config_ab |
 | **F-022** | **Log-likelihood scoring does *not* cure position bias — it sharpens it.** Switching gen→ll, the 0-shot position swing *grows* 0.48 → 0.70 and the chosen-A share *rises* 56% → 67%, even as debiased accuracy improves 0.36 → 0.48. Sampling at temp 1 blurs the model's positional preference (it occasionally samples off-top); argmax commits to the top logit every time, so ll is simultaneously more accurate *and* more polarized. The bias lives in the weights, not the readout — the "cleaner" scoring method exposes it undiluted rather than removing it. My "ll will fix the bias" prediction lost. | harness |
 
 ---
@@ -372,6 +373,38 @@ few-shot hurts, position bias is model-intrinsic), and the leaderboard's single 
 demonstrably one draw from a harness-dependent range. Next: TruthfulQA MC1 (still queued,
 predict higher squish); then config-as-squish (D-003 → data).
 
+## 2026-07-21 — config squish: D-003's argument, turned into (a small) number
+
+The third leg. D-003 held that the sampling config is itself a squish source; F-019
+sharpened it (ollama's Modelfile *is* Qwen's recommended config). Time to measure it, not
+assert it. Two arms on the same 8-prompt battery: controlled full-softmax vs Qwen's
+recommended top_p .95 / top_k 20 / presence 1.5, every other knob neutral in both so the
+contrast isolates exactly Qwen's three deliberate choices. **Pre-registered a prediction**
+in the journal before running: small effect, because top_p/top_k barely truncate a two-way
+split and presence_penalty can't reach the first token.
+
+**Result (`results/config_ab.{png,json}`, 487s): the prediction held, almost to the
+decimal.** → **F-023.** Mean dispersion moved 0.141 → 0.140 (Δ −0.001); mean |Δp_yes|
+0.019; **only pluto** shifted confidently, and by exactly the predicted mechanism —
+truncation clipping its residual 4.7% minority mass down to a flat 0.0, i.e. the shipped
+config makes the model look *marginally more sure* on the one prompt where it wasn't quite.
+
+Two things worth keeping. **(1)** The prompt where config bit is `pluto_planet` — the same
+fact that's the cross-lingual outlier (F-015) and the partial-artifact knife-edge (F-009).
+Config squish concentrates where the model's grip is *already loosest*: solid facts have no
+tail to clip, genuine 50/50s (rain, dispersion 0.42) keep both answers far above the
+truncation floor, and only the barely-decided prompt has a thin minority for top_p to cut.
+**(2)** This doesn't weaken D-003, it *scopes* it: config squish is real but its magnitude
+tracks the width of the output tail. On binary yes/no it's a rounding error; on the
+benchmark's chosen-letter distribution (4 letters + format tokens) truncation has real tail
+to bite, and would push the `gen` path toward the sharper, more-A-biased argmax we measured
+as `ll` (F-022). The natural follow-up is config-A/B on the *benchmark*, not the battery —
+that's where the three legs (benchmark / harness / config squish) converge.
+
+Three legs now stand: **which items + scoring** (F-017), **which harness** (F-021/22),
+**which config** (F-023) — a leaderboard number is a choice at every level, each now
+quantified on the same model.
+
 ---
 
 ## Open questions / backlog
@@ -384,9 +417,12 @@ predict higher squish); then config-as-squish (D-003 → data).
   position profiles (we only profiled 0-shot) — does few-shot change the position bias?;
   **(c)** TruthfulQA MC1 still queued (predict higher squish, adversarial-by-construction;
   variable option counts need the loader generalized past a fixed 4).
-- **Config as a squish axis, quantified.** Re-run the same battery under ollama's
-  Modelfile defaults vs the controlled config, and directly measure how much the
-  dispersion moves. That turns D-003's *argument* into *data*.
+- ~~**Config as a squish axis, quantified.**~~ **Done** (F-023, `experiments/config_ab.py`):
+  measured on the binary battery — small and localized (Δ mean dispersion −0.001; only the
+  near-unanimous pluto shifts confidently). Follow-up that would show the *large* version:
+  run the same controlled-vs-Qwen-recommended A/B on the **MC benchmark**, where the wider
+  chosen-letter tail gives truncation something to bite (predict it nudges `gen` toward the
+  A-biased argmax, F-022).
 - **Kernel/backend nondeterminism.** Even with identical explicit config, different
   backends/kernels diverge (the batch-invariance issue from the Thinking Machines
   piece). Probe: does `temperature 0` give bit-identical output across reruns here?

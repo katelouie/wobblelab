@@ -1,0 +1,337 @@
+{
+  "model": "qwen3.5:0.8b",
+  "quant": "Q8_0",
+  "n_rerun": 150,
+  "arm_configs": {
+    "controlled": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 4
+    },
+    "qwen_rec": {
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 1.5,
+      "frequency_penalty": 0.0,
+      "num_predict": 4
+    }
+  },
+  "mean_dispersion": {
+    "controlled": 0.141,
+    "qwen_rec": 0.14
+  },
+  "mean_abs_delta_p": 0.019,
+  "n_confident_shift": 1,
+  "n_majority_flip": 0,
+  "decidable_accuracy": {
+    "controlled": 1.0,
+    "qwen_rec": 1.0
+  },
+  "seconds": 487.4,
+  "results": [
+    {
+      "name": "water_wet",
+      "question": "Is water wet?",
+      "answer": "yes",
+      "controlled": {
+        "yes": 141,
+        "decided": 150,
+        "p_yes": 0.94,
+        "dispersion": 0.06,
+        "disp_ci": [
+          0.032,
+          0.11
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "qwen_rec": {
+        "yes": 136,
+        "decided": 150,
+        "p_yes": 0.907,
+        "dispersion": 0.093,
+        "disp_ci": [
+          0.056,
+          0.151
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "delta_p_yes": -0.033,
+      "delta_p_ci": [
+        -0.097,
+        0.029
+      ],
+      "delta_dispersion": 0.033,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "hotdog_sandwich",
+      "question": "Is a hotdog a sandwich?",
+      "answer": null,
+      "controlled": {
+        "yes": 134,
+        "decided": 150,
+        "p_yes": 0.893,
+        "dispersion": 0.107,
+        "disp_ci": [
+          0.067,
+          0.166
+        ],
+        "majority": "yes",
+        "correct": null
+      },
+      "qwen_rec": {
+        "yes": 129,
+        "decided": 150,
+        "p_yes": 0.86,
+        "dispersion": 0.14,
+        "disp_ci": [
+          0.093,
+          0.205
+        ],
+        "majority": "yes",
+        "correct": null
+      },
+      "delta_p_yes": -0.033,
+      "delta_p_ci": [
+        -0.109,
+        0.042
+      ],
+      "delta_dispersion": 0.033,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "seven_prime",
+      "question": "Is 7 a prime number?",
+      "answer": "yes",
+      "controlled": {
+        "yes": 137,
+        "decided": 150,
+        "p_yes": 0.913,
+        "dispersion": 0.087,
+        "disp_ci": [
+          0.051,
+          0.143
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "qwen_rec": {
+        "yes": 137,
+        "decided": 150,
+        "p_yes": 0.913,
+        "dispersion": 0.087,
+        "disp_ci": [
+          0.051,
+          0.143
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "delta_p_yes": 0.0,
+      "delta_p_ci": [
+        -0.066,
+        0.066
+      ],
+      "delta_dispersion": 0.0,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "zero_even",
+      "question": "Is zero an even number?",
+      "answer": "yes",
+      "controlled": {
+        "yes": 127,
+        "decided": 150,
+        "p_yes": 0.847,
+        "dispersion": 0.153,
+        "disp_ci": [
+          0.104,
+          0.22
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "qwen_rec": {
+        "yes": 126,
+        "decided": 150,
+        "p_yes": 0.84,
+        "dispersion": 0.16,
+        "disp_ci": [
+          0.11,
+          0.227
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "delta_p_yes": -0.007,
+      "delta_p_ci": [
+        -0.09,
+        0.076
+      ],
+      "delta_dispersion": 0.007,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "tomato_fruit",
+      "question": "Is a tomato a fruit?",
+      "answer": "yes",
+      "controlled": {
+        "yes": 127,
+        "decided": 150,
+        "p_yes": 0.847,
+        "dispersion": 0.153,
+        "disp_ci": [
+          0.104,
+          0.22
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "qwen_rec": {
+        "yes": 127,
+        "decided": 150,
+        "p_yes": 0.847,
+        "dispersion": 0.153,
+        "disp_ci": [
+          0.104,
+          0.22
+        ],
+        "majority": "yes",
+        "correct": true
+      },
+      "delta_p_yes": 0.0,
+      "delta_p_ci": [
+        -0.082,
+        0.082
+      ],
+      "delta_dispersion": 0.0,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "pluto_planet",
+      "question": "Is Pluto a planet?",
+      "answer": "no",
+      "controlled": {
+        "yes": 7,
+        "decided": 150,
+        "p_yes": 0.047,
+        "dispersion": 0.047,
+        "disp_ci": [
+          0.023,
+          0.093
+        ],
+        "majority": "no",
+        "correct": true
+      },
+      "qwen_rec": {
+        "yes": 0,
+        "decided": 150,
+        "p_yes": 0.0,
+        "dispersion": 0.0,
+        "disp_ci": [
+          0.0,
+          0.025
+        ],
+        "majority": "no",
+        "correct": true
+      },
+      "delta_p_yes": -0.047,
+      "delta_p_ci": [
+        -0.093,
+        -0.012
+      ],
+      "delta_dispersion": -0.047,
+      "shift_confident": true,
+      "majority_flip": false
+    },
+    {
+      "name": "rain_tomorrow",
+      "question": "Will it rain tomorrow?",
+      "answer": null,
+      "controlled": {
+        "yes": 63,
+        "decided": 150,
+        "p_yes": 0.42,
+        "dispersion": 0.42,
+        "disp_ci": [
+          0.344,
+          0.5
+        ],
+        "majority": "no",
+        "correct": null
+      },
+      "qwen_rec": {
+        "yes": 58,
+        "decided": 150,
+        "p_yes": 0.387,
+        "dispersion": 0.387,
+        "disp_ci": [
+          0.312,
+          0.467
+        ],
+        "majority": "no",
+        "correct": null
+      },
+      "delta_p_yes": -0.033,
+      "delta_p_ci": [
+        -0.142,
+        0.077
+      ],
+      "delta_dispersion": -0.033,
+      "shift_confident": false,
+      "majority_flip": false
+    },
+    {
+      "name": "cereal_soup",
+      "question": "Is cereal a soup?",
+      "answer": null,
+      "controlled": {
+        "yes": 15,
+        "decided": 150,
+        "p_yes": 0.1,
+        "dispersion": 0.1,
+        "disp_ci": [
+          0.062,
+          0.158
+        ],
+        "majority": "no",
+        "correct": null
+      },
+      "qwen_rec": {
+        "yes": 15,
+        "decided": 150,
+        "p_yes": 0.1,
+        "dispersion": 0.1,
+        "disp_ci": [
+          0.062,
+          0.158
+        ],
+        "majority": "no",
+        "correct": null
+      },
+      "delta_p_yes": 0.0,
+      "delta_p_ci": [
+        -0.07,
+        0.07
+      ],
+      "delta_dispersion": 0.0,
+      "shift_confident": false,
+      "majority_flip": false
+    }
+  ]
+}
