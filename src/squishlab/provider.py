@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import Callable, Protocol, runtime_checkable
 
+from squishlab.benchmark import LETTERS
+
 
 @runtime_checkable
 class Provider(Protocol):
@@ -53,7 +55,7 @@ class MockProvider:
 
     def ask(self, prompt: str, seed: int) -> str:
         pos = self._policy(prompt, seed)
-        return "" if pos is None else _LETTERS[pos]
+        return "" if pos is None else LETTERS[pos]
 
     def rank_letters(
         self, prompt: str, n_options: int, seed: int = 0, top_logprobs: int = 20
@@ -61,13 +63,10 @@ class MockProvider:
         pos = self._policy(prompt, seed)
         if pos is None or pos >= n_options:
             return None, {}
-        return pos, {_LETTERS[pos]: 0.0}
+        return pos, {LETTERS[pos]: 0.0}
 
     def config(self) -> dict:
         return {"provider": "mock", "name": self._name}
-
-
-_LETTERS = "ABCDEFGH"
 
 
 def always_position(pos: int) -> Callable[[str, int], int]:
@@ -84,11 +83,11 @@ def picks_option_containing(needle: str) -> Callable[[str, int], int | None]:
             line = line.strip()
             if (
                 len(line) >= 2
-                and line[0] in _LETTERS
+                and line[0] in LETTERS
                 and line[1] == "."
                 and needle in line
             ):
-                return _LETTERS.index(line[0])
+                return LETTERS.index(line[0])
         return None
 
     return policy

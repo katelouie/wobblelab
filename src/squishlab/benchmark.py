@@ -14,10 +14,14 @@ chosen answer comparable across orderings.
 from __future__ import annotations
 
 import re
+import string
 from collections import Counter
+from collections.abc import Hashable
 from dataclasses import dataclass
 
-LETTERS = "ABCDEFGH"
+LETTERS = (
+    string.ascii_uppercase
+)  # up to 26 options (MMLU-Pro 10, TruthfulQA-MC1 ~13, ...)
 
 
 @dataclass(frozen=True)
@@ -39,16 +43,19 @@ def format_prompt(item: MCItem, order: tuple[int, ...]) -> str:
     return "\n".join(lines)
 
 
-_LETTER_RE = re.compile(r"\b([A-H])\b")
-
-
 def parse_answer(text: str, n_options: int) -> int | None:
-    """Return the chosen *presentation position* (0-based), or None if unparseable."""
-    m = _LETTER_RE.search(text.upper())
-    if not m:
+    """Return the chosen *presentation position* (0-based), or None if unparseable.
+
+    The match is bounded to exactly the valid letters for this item's option count, so a
+    4-option question can't be "answered" by the pronoun "I" (the 9th letter) leaking out of
+    a chatty response, and a 12-option question can legitimately land on "J". First in-range
+    standalone letter wins, which is what the "answer with only the letter" prompt elicits.
+    """
+    if n_options < 1:
         return None
-    pos = LETTERS.index(m.group(1))
-    return pos if pos < n_options else None
+    valid = LETTERS[:n_options]
+    m = re.search(rf"\b([{valid}])\b", text.upper())
+    return LETTERS.index(m.group(1)) if m else None
 
 
 def presented_to_original(pos: int | None, order: tuple[int, ...]) -> int | None:
@@ -69,8 +76,13 @@ def orders_correct_at_each_position(item: MCItem) -> list[tuple[int, ...]]:
     return [tuple(distractors[:p] + [a] + distractors[p:]) for p in range(k)]
 
 
-def modal(values) -> tuple[int | None, float]:
-    """Most common non-None value and its fraction of the decided votes."""
+def modal(values) -> tuple[Hashable | None, float]:
+    """Most common non-None value and its fraction of the decided votes.
+
+    Works over any hashable outcome, not just option indices — a code task's behavior hash
+    or a judge's score bucket aggregate the same way, which is what lets one harness measure
+    interventional/observational stability across benchmark families.
+    """
     c = Counter(v for v in values if v is not None)
     if not c:
         return None, 0.0

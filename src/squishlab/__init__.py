@@ -14,6 +14,7 @@ from squishlab.report import (
     evaluate,
 )
 from squishlab.squish import model_squish, squish_score
+from squishlab.task import MultipleChoiceTask, Outcome, Task
 from squishlab.stats import (
     bootstrap_ci,
     confident_shift,
@@ -30,6 +31,9 @@ __all__ = [
     "MockProvider",
     "always_position",
     "picks_option_containing",
+    "Task",
+    "Outcome",
+    "MultipleChoiceTask",
     "ModelReport",
     "evaluate",
     "compare",

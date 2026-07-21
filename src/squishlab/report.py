@@ -1,205 +1,249 @@
 """The catalog artifact: one call, one model, a benchmark number you can actually trust.
 
-`evaluate(provider, items)` runs the position-debiased benchmark and returns a `ModelReport`
--- accuracy WITH a confidence interval, the reorder squish (how often the chosen answer's
-content flips under a meaning-preserving option shuffle), the position-bias profile (the
-mirage detector), and full provenance. `compare()` runs it across models. This is the
-benchmark-squish measurement from experiments/bench.py, lifted out of a one-off script into
-the reusable surface the whole project points at.
+`evaluate(provider, items)` runs a benchmark through a `Task` (default: multiple-choice) and
+returns a `ModelReport` — accuracy WITH a confidence interval, both squish axes (does the
+answer move across reruns / across meaning-preserving perturbations), and, for choice tasks,
+the position-bias profile that catches the mirage. `compare()` runs it across models.
 
-Everything here is provider-agnostic (it drives the Provider seam) and item-agnostic (the
-caller supplies MCItems; loading a dataset stays out of the library). Deterministic given a
-deterministic provider, so it is fully testable with MockProvider and no model running.
+The harness is *family-agnostic*: it owns reruns, CIs, and squish aggregation, and delegates
+"how to perturb" and "how to score" to the Task. So the same code produces a report for MMLU,
+TruthfulQA (variable option counts), and — once those Tasks are built — SWE-bench-style
+execution evals, changing nothing here. It is also item-agnostic (the caller supplies items;
+dataset loading stays in squishlab.loaders) and deterministic given a deterministic provider,
+so it's fully testable with MockProvider and no model running.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from squishlab.benchmark import (
-    LETTERS,
-    MCItem,
-    format_prompt,
-    modal,
-    orders_correct_at_each_position,
-    parse_answer,
-    presented_to_original,
-)
+from squishlab.benchmark import LETTERS, modal
 from squishlab.provider import Provider
 from squishlab.stats import bootstrap_ci
+from squishlab.task import MultipleChoiceTask, Task
 
 
 @dataclass(frozen=True)
 class ModelReport:
-    """A single (model, benchmark) catalog entry: the number and how much to trust it."""
+    """A single (model, benchmark) catalog entry: the number and how much to trust it.
+
+    Universal fields apply to every benchmark family. The position fields are populated only
+    for choice tasks (they stay None when the family has no notion of answer position).
+    """
 
     model: str
     benchmark: str
-    scoring: str  # "gen" (sampled) or "ll" (log-likelihood)
+    task: str  # the Task's name, e.g. "mc:ll"
     n_items: int
     n_rerun: int
-    accuracy: float  # position-debiased
-    accuracy_ci: tuple[float, float]  # bootstrapped over items
-    reorder_squish: (
-        float  # fraction of items whose modal answer-content flips on shuffle
+    accuracy: float | None  # position-debiased; None if the task is ungraded
+    accuracy_ci: tuple[float, float] | None  # bootstrapped over items
+    interventional_squish: (
+        float  # answer-content flips across meaning-preserving perturbations
     )
-    position_swing: float  # max-min accuracy across answer positions (0 = unbiased)
-    accuracy_by_position: tuple[float, ...]
-    chosen_distribution: tuple[float, ...]  # which letter the model reaches for
+    observational_squish: float  # answer-content flips across reruns of the same input
+    accuracy_by_position: tuple[float, ...] | None = None  # choice tasks only
+    position_swing: float | None = None  # max-min accuracy across answer positions
+    chosen_distribution: tuple[float, ...] | None = (
+        None  # which slot the model reaches for
+    )
     provenance: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "model": self.model,
             "benchmark": self.benchmark,
-            "scoring": self.scoring,
+            "task": self.task,
             "n_items": self.n_items,
             "n_rerun": self.n_rerun,
-            "accuracy": round(self.accuracy, 3),
-            "accuracy_ci": [round(x, 3) for x in self.accuracy_ci],
-            "reorder_squish": round(self.reorder_squish, 3),
-            "position_swing": round(self.position_swing, 3),
-            "accuracy_by_position": [round(x, 3) for x in self.accuracy_by_position],
-            "chosen_distribution": [round(x, 3) for x in self.chosen_distribution],
+            "accuracy": round(self.accuracy, 3) if self.accuracy is not None else None,
+            "accuracy_ci": [round(x, 3) for x in self.accuracy_ci]
+            if self.accuracy_ci
+            else None,
+            "interventional_squish": round(self.interventional_squish, 3),
+            "observational_squish": round(self.observational_squish, 3),
             "provenance": self.provenance,
         }
+        if self.accuracy_by_position is not None:
+            d["accuracy_by_position"] = [round(x, 3) for x in self.accuracy_by_position]
+            d["position_swing"] = round(self.position_swing, 3)
+            d["chosen_distribution"] = [round(x, 3) for x in self.chosen_distribution]
+        return d
 
     def to_markdown(self) -> str:
-        lo, hi = self.accuracy_ci
-        k = len(self.accuracy_by_position)
-        by_pos = "  ".join(
-            f"{LETTERS[i]} {a:.2f}" for i, a in enumerate(self.accuracy_by_position)
+        lines = [
+            f"**{self.model}** on `{self.benchmark}` ({self.task}, "
+            f"{self.n_items} items × {self.n_rerun})\n"
+        ]
+        if self.accuracy is not None:
+            lo, hi = self.accuracy_ci
+            lines.append(
+                f"- **accuracy: {self.accuracy:.1%}**  (95% CI {lo:.1%}–{hi:.1%})"
+            )
+        lines.append(
+            f"- interventional squish: {self.interventional_squish:.1%} of answers flip "
+            f"content under a meaning-preserving perturbation"
         )
-        chosen = "  ".join(
-            f"{LETTERS[i]} {c:.0%}" for i, c in enumerate(self.chosen_distribution)
+        lines.append(
+            f"- observational squish: {self.observational_squish:.1%} rerun instability"
         )
-        return (
-            f"**{self.model}** on `{self.benchmark}` ({self.scoring}, "
-            f"{self.n_items} items × {self.n_rerun})\n\n"
-            f"- **accuracy: {self.accuracy:.1%}**  (95% CI {lo:.1%}–{hi:.1%})\n"
-            f"- reorder squish: {self.reorder_squish:.1%} of answers flip content on option shuffle\n"
-            f"- position swing: {self.position_swing:.2f} across {k} slots  "
-            f"({'flat, unbiased' if self.position_swing < 0.1 else 'position-biased'})\n"
-            f"- accuracy by answer position: {by_pos}\n"
-            f"- letter the model reaches for: {chosen}\n"
-        )
+        if self.accuracy_by_position is not None:
+            k = len(self.accuracy_by_position)
+            by_pos = "  ".join(
+                f"{LETTERS[i]} {a:.2f}" for i, a in enumerate(self.accuracy_by_position)
+            )
+            chosen = "  ".join(
+                f"{LETTERS[i]} {c:.0%}" for i, c in enumerate(self.chosen_distribution)
+            )
+            flat = (
+                "flat, unbiased"
+                if (self.position_swing or 0) < 0.1
+                else "position-biased"
+            )
+            lines.append(
+                f"- position swing: {self.position_swing:.2f} across {k} slots  ({flat})"
+            )
+            lines.append(f"- accuracy by answer position: {by_pos}")
+            lines.append(f"- letter the model reaches for: {chosen}")
+        return "\n".join(lines) + "\n"
 
     def __str__(self) -> str:
         return self.to_markdown()
 
 
-def _gen_choice(provider: Provider, prompt: str, n: int, seed: int) -> int | None:
-    return parse_answer(provider.ask(prompt, seed=seed), n)
-
-
-def _ll_choice(provider: Provider, prompt: str, n: int, seed: int) -> int | None:
-    pos, _ = provider.rank_letters(prompt, n, seed=seed)
-    return pos
-
-
 def evaluate(
     provider: Provider,
-    items: list[MCItem],
+    items: list,
     *,
+    task: Task | None = None,
     benchmark: str = "benchmark",
     model: str | None = None,
     scoring: str = "gen",
     n_rerun: int = 5,
     boot_seed: int = 1,
 ) -> ModelReport:
-    """Position-debiased accuracy + CI + reorder squish + position bias for one model.
+    """Run one model on one benchmark and return its report.
 
-    Places the correct answer at every option slot (distractors keep their order) and reruns
-    each, so accuracy is debiased and position bias is measured directly. `scoring="ll"` reads
-    the model's letter log-probabilities (deterministic, so reruns collapse to one);
-    `scoring="gen"` samples and parses. Accuracy CI is bootstrapped over items -- the correct
-    unit, since reruns of one item are correlated.
+    ``task`` selects the benchmark family (default: ``MultipleChoiceTask(scoring)``). For each
+    item the harness runs every perturbation (the interventional axis) ``n_rerun`` times (the
+    observational axis; collapsed to 1 when the task is deterministic), then aggregates:
+    accuracy with a bootstrap-over-items CI (the correct unit — reruns of one item are
+    correlated), interventional squish (does the modal content change across perturbations),
+    observational squish (does it change across reruns), and — for choice tasks — accuracy by
+    answer position + the chosen-letter distribution. Variable option counts are handled;
+    position stats aggregate over whichever slots actually occur.
     """
-    if scoring not in ("gen", "ll"):
-        raise ValueError(f"scoring must be 'gen' or 'll', got {scoring!r}")
     if not items:
         raise ValueError("no items to evaluate")
-    choose = _ll_choice if scoring == "ll" else _gen_choice
-    rerun = 1 if scoring == "ll" else n_rerun  # ll is deterministic
+    task = task or MultipleChoiceTask(scoring=scoring)
+    rerun = 1 if getattr(task, "deterministic", False) else n_rerun
 
-    k = len(items[0].options)
-    pos_correct = [0] * k
-    pos_total = [0] * k
-    chosen = [0] * k
     per_item_acc: list[float] = []
-    per_item_reorder: list[float] = []
+    per_item_interv: list[float] = []
+    obs_terms: list[float] = []
+    slot_correct: dict[int, int] = {}
+    slot_total: dict[int, int] = {}
+    slot_chosen: dict[int, int] = {}
+    max_slots = 0
 
-    for it in items:
-        n = len(it.options)
-        orders = orders_correct_at_each_position(
-            it
-        )  # index p -> correct sits at slot p
-        modal_content = []
+    for item in items:
+        modal_contents = []
         correct = 0
-        total = 0
-        for p, order in enumerate(orders):
-            chosen_orig = []
+        graded = 0
+        for pert in task.perturbations(item):
+            contents = []
             for s in range(rerun):
-                pos = choose(provider, format_prompt(it, order), n, s)
-                if pos is not None:
-                    chosen[pos] += 1
-                    chosen_orig.append(presented_to_original(pos, order))
-                pos_total[p] += 1
-                if pos == p:
-                    pos_correct[p] += 1
-                    correct += 1
-                total += 1
-            mc, _ = modal(chosen_orig)
-            modal_content.append(mc)
-        per_item_acc.append(correct / total)
-        _, content_frac = modal(modal_content)
-        per_item_reorder.append(
+                o = task.run(provider, item, pert, s)
+                if o.correct is not None:
+                    graded += 1
+                    correct += int(o.correct)
+                if o.content is not None:
+                    contents.append(o.content)
+                if o.slot is not None:
+                    slot_chosen[o.slot] = slot_chosen.get(o.slot, 0) + 1
+                if o.correct_slot is not None:
+                    slot_total[o.correct_slot] = slot_total.get(o.correct_slot, 0) + 1
+                    if o.slot == o.correct_slot:
+                        slot_correct[o.correct_slot] = (
+                            slot_correct.get(o.correct_slot, 0) + 1
+                        )
+                if o.n_slots:
+                    max_slots = max(max_slots, o.n_slots)
+            mc, frac = modal(contents)
+            obs_terms.append(1 - frac if contents else 0.0)  # instability across reruns
+            modal_contents.append(mc)
+        if graded:
+            per_item_acc.append(correct / graded)
+        _, content_frac = modal(modal_contents)
+        per_item_interv.append(
             1 - content_frac
-        )  # 0 = same content across all shuffles
+        )  # 0 = same content across all perturbations
 
-    accuracy = sum(per_item_acc) / len(per_item_acc)
-    acc_ci = bootstrap_ci(
-        per_item_acc, lambda s: sum(s) / len(s), n_boot=4000, seed=boot_seed
+    accuracy = sum(per_item_acc) / len(per_item_acc) if per_item_acc else None
+    acc_ci = (
+        tuple(
+            bootstrap_ci(
+                per_item_acc, lambda s: sum(s) / len(s), n_boot=4000, seed=boot_seed
+            )
+        )
+        if per_item_acc
+        else None
     )
-    acc_by_pos = tuple(c / t if t else 0.0 for c, t in zip(pos_correct, pos_total))
-    total_chosen = sum(chosen) or 1
+    interventional = sum(per_item_interv) / len(per_item_interv)
+    observational = sum(obs_terms) / len(obs_terms) if obs_terms else 0.0
+
+    acc_by_pos = pos_swing = chosen_dist = None
+    if slot_total and max_slots:
+        acc_by_pos = tuple(
+            (slot_correct.get(p, 0) / slot_total[p]) if slot_total.get(p) else 0.0
+            for p in range(max_slots)
+        )
+        populated = [acc_by_pos[p] for p in range(max_slots) if slot_total.get(p)]
+        pos_swing = (max(populated) - min(populated)) if populated else 0.0
+        total_chosen = sum(slot_chosen.values()) or 1
+        chosen_dist = tuple(
+            slot_chosen.get(p, 0) / total_chosen for p in range(max_slots)
+        )
+
     return ModelReport(
         model=model or provider.config().get("model", "model"),
         benchmark=benchmark,
-        scoring=scoring,
+        task=task.name,
         n_items=len(items),
         n_rerun=rerun,
         accuracy=accuracy,
-        accuracy_ci=tuple(acc_ci),
-        reorder_squish=sum(per_item_reorder) / len(per_item_reorder),
-        position_swing=max(acc_by_pos) - min(acc_by_pos),
+        accuracy_ci=acc_ci,
+        interventional_squish=interventional,
+        observational_squish=observational,
         accuracy_by_position=acc_by_pos,
-        chosen_distribution=tuple(c / total_chosen for c in chosen),
+        position_swing=pos_swing,
+        chosen_distribution=chosen_dist,
         provenance={
             "config": provider.config(),
-            "scoring": scoring,
+            "task": task.name,
             "boot_seed": boot_seed,
         },
     )
 
 
-def compare(
-    providers: dict[str, Provider], items: list[MCItem], **kwargs
-) -> list[ModelReport]:
+def compare(providers: dict[str, Provider], items: list, **kwargs) -> list[ModelReport]:
     """Evaluate several named models on the same items. `model` label = the dict key."""
     return [evaluate(p, items, model=name, **kwargs) for name, p in providers.items()]
 
 
 def compare_markdown(reports: list[ModelReport]) -> str:
-    """A comparison table for a set of reports -- the shape a catalog page wants."""
+    """A comparison table for a set of reports — the shape a catalog page wants."""
     header = (
-        "| model | accuracy | 95% CI | reorder squish | position swing |\n"
+        "| model | accuracy | 95% CI | interv. squish | position swing |\n"
         "|---|---|---|---|---|\n"
     )
-    rows = "".join(
-        f"| {r.model} | {r.accuracy:.1%} | "
-        f"{r.accuracy_ci[0]:.1%}–{r.accuracy_ci[1]:.1%} | "
-        f"{r.reorder_squish:.1%} | {r.position_swing:.2f} |\n"
-        for r in reports
-    )
-    return header + rows
+
+    def cell(r: ModelReport) -> str:
+        acc = f"{r.accuracy:.1%}" if r.accuracy is not None else "—"
+        ci = f"{r.accuracy_ci[0]:.1%}–{r.accuracy_ci[1]:.1%}" if r.accuracy_ci else "—"
+        swing = f"{r.position_swing:.2f}" if r.position_swing is not None else "—"
+        return (
+            f"| {r.model} | {acc} | {ci} | {r.interventional_squish:.1%} | {swing} |\n"
+        )
+
+    return header + "".join(cell(r) for r in reports)
