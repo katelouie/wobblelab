@@ -1,6 +1,18 @@
 """squishlab -- measuring how much LLM answers move under things that shouldn't matter."""
 
 from squishlab.client import CONTROLLED, OllamaClient
+from squishlab.provider import (
+    MockProvider,
+    Provider,
+    always_position,
+    picks_option_containing,
+)
+from squishlab.report import (
+    ModelReport,
+    compare,
+    compare_markdown,
+    evaluate,
+)
 from squishlab.squish import model_squish, squish_score
 from squishlab.stats import (
     bootstrap_ci,
@@ -14,6 +26,14 @@ __version__ = "0.0.1"
 __all__ = [
     "OllamaClient",
     "CONTROLLED",
+    "Provider",
+    "MockProvider",
+    "always_position",
+    "picks_option_containing",
+    "ModelReport",
+    "evaluate",
+    "compare",
+    "compare_markdown",
     "wilson_ci",
     "newcombe_diff_ci",
     "confident_shift",
