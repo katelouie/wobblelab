@@ -13,3 +13,4 @@ dist/
 
 # Internal-only framing, kept out of the public repo
 docs/internal-pitch.md
+pitch/

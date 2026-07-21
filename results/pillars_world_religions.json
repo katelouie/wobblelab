@@ -1,0 +1,85 @@
+{
+  "report": {
+    "model": "qwen3.5:0.8b",
+    "benchmark": "mmlu:world_religions",
+    "task": "mc:ll",
+    "n_items": 24,
+    "n_rerun": 1,
+    "accuracy": 0.49,
+    "accuracy_ci": [
+      0.365,
+      0.615
+    ],
+    "interventional_squish": 0.219,
+    "observational_squish": 0.0,
+    "squish_by_kind": {
+      "reorder": 0.365,
+      "paraphrase": 0.028,
+      "translate:Chinese": 0.208
+    },
+    "provenance": {
+      "config": {
+        "model": "qwen3.5:0.8b",
+        "url": "http://localhost:11434/api/chat",
+        "options": {
+          "temperature": 1.0,
+          "top_p": 1.0,
+          "top_k": 0,
+          "min_p": 0.0,
+          "repeat_penalty": 1.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "num_predict": 8
+        },
+        "think": false
+      },
+      "task": "mc:ll",
+      "boot_seed": 1,
+      "seed_offset": 0
+    },
+    "accuracy_by_position": [
+      0.875,
+      0.208,
+      0.333,
+      0.5
+    ],
+    "position_swing": 0.667,
+    "chosen_distribution": [
+      0.635,
+      0.052,
+      0.104,
+      0.208
+    ]
+  },
+  "stability": {
+    "runs": [
+      0.3645833333333333,
+      0.4479166666666667,
+      0.3854166666666667,
+      0.5104166666666666,
+      0.3125
+    ],
+    "mean": 0.4041666666666667,
+    "std": 0.06859199013814303,
+    "spread": 0.19791666666666663,
+    "n_runs": 5,
+    "scoring": "gen"
+  },
+  "perturber": {
+    "model": "qwen3.5:0.8b",
+    "url": "http://localhost:11434/api/chat",
+    "options": {
+      "temperature": 0.7,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 128
+    },
+    "think": false
+  },
+  "language": "Chinese",
+  "seconds": 225.4
+}
