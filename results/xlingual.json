@@ -1,0 +1,249 @@
+{
+  "model": "qwen3.5:0.8b",
+  "quantization": "Q8_0",
+  "config": {
+    "model": "qwen3.5:0.8b",
+    "url": "http://localhost:11434/api/chat",
+    "options": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "min_p": 0.0,
+      "repeat_penalty": 1.0,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "num_predict": 4
+    },
+    "think": false
+  },
+  "n": 150,
+  "mean_disagreement_invariant": 0.101,
+  "accuracy_gaps": [],
+  "seconds": 492.9,
+  "results": [
+    {
+      "name": "seven_prime",
+      "kind": "invariant",
+      "answer": "yes",
+      "p_en": 0.913,
+      "p_zh": 0.86,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.857,
+        0.949
+      ],
+      "zh_ci": [
+        0.795,
+        0.907
+      ],
+      "disagreement": 0.053,
+      "diff_ci": [
+        -0.019,
+        0.127
+      ],
+      "confident": false,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "zero_even",
+      "kind": "invariant",
+      "answer": "yes",
+      "p_en": 0.847,
+      "p_zh": 0.873,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.78,
+        0.896
+      ],
+      "zh_ci": [
+        0.811,
+        0.917
+      ],
+      "disagreement": 0.027,
+      "diff_ci": [
+        -0.106,
+        0.053
+      ],
+      "confident": false,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "water_wet",
+      "kind": "invariant",
+      "answer": "yes",
+      "p_en": 0.94,
+      "p_zh": 0.967,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.89,
+        0.968
+      ],
+      "zh_ci": [
+        0.924,
+        0.986
+      ],
+      "disagreement": 0.027,
+      "diff_ci": [
+        -0.08,
+        0.024
+      ],
+      "confident": false,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "pluto_planet",
+      "kind": "invariant",
+      "answer": "no",
+      "p_en": 0.047,
+      "p_zh": 0.38,
+      "en_maj": "no",
+      "zh_maj": "no",
+      "en_ci": [
+        0.023,
+        0.093
+      ],
+      "zh_ci": [
+        0.306,
+        0.46
+      ],
+      "disagreement": 0.333,
+      "diff_ci": [
+        -0.417,
+        -0.246
+      ],
+      "confident": true,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "sun_star",
+      "kind": "invariant",
+      "answer": "yes",
+      "p_en": 0.933,
+      "p_zh": 0.96,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.882,
+        0.963
+      ],
+      "zh_ci": [
+        0.915,
+        0.982
+      ],
+      "disagreement": 0.027,
+      "diff_ci": [
+        -0.083,
+        0.027
+      ],
+      "confident": false,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "earth_round",
+      "kind": "invariant",
+      "answer": "yes",
+      "p_en": 0.987,
+      "p_zh": 0.847,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.953,
+        0.996
+      ],
+      "zh_ci": [
+        0.78,
+        0.896
+      ],
+      "disagreement": 0.14,
+      "diff_ci": [
+        0.08,
+        0.207
+      ],
+      "confident": true,
+      "en_correct": true,
+      "zh_correct": true,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    },
+    {
+      "name": "hotdog_sandwich",
+      "kind": "western",
+      "answer": null,
+      "p_en": 0.893,
+      "p_zh": 0.577,
+      "en_maj": "yes",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.834,
+        0.933
+      ],
+      "zh_ci": [
+        0.497,
+        0.654
+      ],
+      "disagreement": 0.316,
+      "diff_ci": [
+        0.219,
+        0.406
+      ],
+      "confident": true,
+      "en_correct": null,
+      "zh_correct": null,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 1
+    },
+    {
+      "name": "soymilk_soup",
+      "kind": "chinese",
+      "answer": null,
+      "p_en": 0.427,
+      "p_zh": 0.86,
+      "en_maj": "no",
+      "zh_maj": "yes",
+      "en_ci": [
+        0.35,
+        0.507
+      ],
+      "zh_ci": [
+        0.795,
+        0.907
+      ],
+      "disagreement": 0.433,
+      "diff_ci": [
+        -0.523,
+        -0.331
+      ],
+      "confident": true,
+      "en_correct": null,
+      "zh_correct": null,
+      "gap": false,
+      "en_unparseable": 0,
+      "zh_unparseable": 0
+    }
+  ]
+}

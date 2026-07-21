@@ -42,6 +42,9 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-011** | Even at N=150 / M=60, only **2/8** points resolve — prompts cluster right at the thresholds (margin ≈ 0.60, disp ≈ 0.15), which slice the densest band. Points to data-derived thresholds or continuous confident-membership, not a fixed grid. | vPOC v0.2 |
 | **F-012** | **The model has a ~5–15% rerun-noise floor** even on rock-solid facts (water 0.06, pluto 0.05, prime 0.09). So a *fixed* dispersion threshold will always cut through the "solid" cluster — the hard grid was the wrong abstraction (→ the continuous squish score, D-007). | vPOC v0.2 |
 | **F-013** | **Appropriate uncertainty and epistemic instability are behaviorally indistinguishable** from outputs alone: a decidable fact the model has lost its grip on and a genuinely undecidable question produce the *same* output distribution (phrasing-stable dispersion). Only external ground truth separates them — which is why D-007's decidability gate is necessary, not a convenience. | reasoning → D-007 |
+| **F-014** | **Qwen-0.8B is cross-lingually *consistent* on clear facts:** mean EN↔ZH `\|Δ\|` = 0.10, and **zero majority accuracy gaps** — it gets every decidable fact right in *both* languages. More robust than predicted; my "we'll catch an accuracy gap" bet lost. | x-lingual |
+| **F-015** | **Pluto is the cross-lingual outlier among facts** (`\|Δ\|`=0.33): 95% "not a planet" in English vs only 62% in Chinese. The model's grip on the recent, English-discourse-heavy IAU reclassification is much weaker in Chinese — real cross-lingual squish, on the one fact with a contested history. | x-lingual |
+| **F-016** | **Cultural framing is language-bound.** Both cultural items swing hard cross-lingually (hotdog 0.32, soymilk 0.43), and 豆浆是汤吗 ("is soy milk a soup") **flips its majority**: *no* in English (0.43), *yes* in Chinese (0.86). Confounded (not clean squish), but a crisp demo that category conventions live per-language — and the Chinese-culture item swung most. | x-lingual |
 
 ---
 
@@ -250,6 +253,37 @@ Built: `src/squishlab/squish.py` (`squish_score` + `model_squish`, tested,
 cereal / rain → null), and **scoring is a separate post-processing step**
 (`experiments/score.py`) so we can re-score without re-running the model. Artifacts:
 `results/squish_scores_v02.{png,json}`.
+
+## 2026-07-20 — cross-lingual probe (EN vs 中文)
+
+A dedicated symmetric probe (`experiments/xlingual.py`): each prompt run in English and
+Chinese N=150× each, disagreement `|p_yes(EN) − p_yes(ZH)|` with a Newcombe CI, plus
+per-language accuracy from the `answer` labels. Battery = 6 culturally-invariant facts
+(the clean signal) + 2 cultural items, one Western (hotdog), one Chinese (soy-milk-soup,
+Kate's pick over wonton). Simplified for Qwen. `results/xlingual.{png,json}`.
+
+The result was more nuanced than expected, and it corrected a prediction:
+
+- **F-014 — the model is *good* at this.** Mean `|Δ|` on invariant facts is 0.10, and
+  there are **zero majority accuracy gaps**: it gets 7-is-prime, 0-is-even, water-is-wet,
+  sun-is-a-star, earth-is-round, and Pluto-is-not-a-planet correct in *both* languages.
+  I'd bet we'd catch a right-in-EN/wrong-in-ZH flip; we didn't. Qwen being Chinese-origin,
+  EN↔ZH is a genuinely fair, strong-on-both comparison, and it shows.
+- **F-015 — except Pluto.** `|Δ|`=0.33: 95% "not a planet" in English, but only 62% in
+  Chinese (majority still correct, but the grip is much looser). It's the single fact with
+  a *recent, contested, English-discourse-heavy* history (the 2006 IAU reclassification),
+  and that's exactly where the cross-lingual knowledge thins. A clean cross-lingual squish.
+- **F-016 — culture is language-bound.** Both cultural items swung hard (hotdog 0.32,
+  soymilk 0.43), and **豆浆是汤吗 flips its majority across languages** — "no, soy milk
+  isn't a soup" in English, "yes it is" in Chinese. That's not squish (it's confounded,
+  correctly labelled null), it's the model reflecting *different category conventions in
+  each language*, which is a finding in its own right and a vindication of gating cultural
+  items out of the clean measurement.
+
+Net: the cleanest cross-lingual squish signal is small-but-real (Pluto), the model is
+otherwise cross-lingually solid on facts, and the cultural items behave as confounded-but-
+interesting rather than as squish. The design (invariant-facts-are-clean, cultural-items-
+are-a-bias-look) held up.
 
 ---
 
