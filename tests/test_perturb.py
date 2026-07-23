@@ -3,6 +3,8 @@
 import pytest
 
 from squishlab import (
+    FormalityShift,
+    LexicalSwap,
     ParaphraseWithModel,
     Perturbation,
     RephraseInstruction,
@@ -98,3 +100,23 @@ def test_paraphrase_rejects_nothing_but_is_a_perturbation():
     )
     with pytest.raises(TypeError):
         ReorderOptions().present()  # needs an item
+
+
+def test_formality_and_lexical_are_distinct_directed_rewrites():
+    # Echo the directive so we can confirm each strategy sends a different instruction.
+    def echo_directive(prompt, seed):
+        return prompt.split("\n\n")[0]  # the directive line, before the question
+
+    p = TextPerturber(echo_directive)
+    formal = FormalityShift(p, n=1).present(ITEM)[0]
+    lexical = LexicalSwap(p, n=1).present(ITEM)[0]
+    para = ParaphraseWithModel(p, n=1).present(ITEM)[0]
+    assert (
+        formal.kind == "formality"
+        and lexical.kind == "lexical"
+        and para.kind == "paraphrase"
+    )
+    # each carries a genuinely different directive
+    assert "casual" in formal.question and "synonym" in lexical.question
+    assert len({formal.question, lexical.question, para.question}) == 3
+    assert all(isinstance(s, Perturbation) for s in (FormalityShift(p), LexicalSwap(p)))

@@ -123,25 +123,23 @@ class RephraseInstruction:
         ]
 
 
-class ParaphraseWithModel:
-    """Model-based: reword the QUESTION with a perturber model (full prompt rephrasing).
+class _ModelRewrite:
+    """Base for model-based question rewrites: call the perturber n times with a directive.
 
-    Meaning preservation is not guaranteed (the paraphraser can drift), so treat a paraphrase
-    hot-spot as a lead to investigate, not a proven defect. Pass a *different* model as the
-    perturber than the one under test where you can.
+    Meaning preservation is not guaranteed (the rewriter can drift), so treat a hot-spot here
+    as a lead to investigate, not a proven defect (lab-journal D-006). Pass a *different* model
+    as the perturber than the one under test where you can. Subclasses set `kind` + `directive`.
     """
 
-    kind = "paraphrase"
+    kind = "rewrite"
+    directive = "Reword the following question, keeping its meaning exactly."
 
     def __init__(self, perturber: Provider, n: int = 3) -> None:
         self.perturber = perturber
         self.n = n
 
     def present(self, item: MCItem) -> list[Presentation]:
-        ask = (
-            "Reword the following question so it means exactly the same thing, changing only "
-            "the wording. Output only the reworded question.\n\n" + item.question
-        )
+        ask = f"{self.directive} Output only the rewritten question.\n\n{item.question}"
         ident = tuple(range(len(item.options)))
         out = []
         for s in range(self.n):
@@ -155,6 +153,44 @@ class ParaphraseWithModel:
                 )
             )
         return out
+
+
+class ParaphraseWithModel(_ModelRewrite):
+    """Reword the question (general paraphrase). The broadest prompt-rephrasing axis."""
+
+    kind = "paraphrase"
+    directive = (
+        "Reword the following question so it means exactly the same thing, "
+        "changing only the wording."
+    )
+
+
+class FormalityShift(_ModelRewrite):
+    """Drop the question into a casual, informal register — same meaning, texting tone.
+
+    Real users don't type like a benchmark. Sensitivity here is production-relevant: does the
+    model still answer when someone asks it the sloppy way?
+    """
+
+    kind = "formality"
+    directive = (
+        "Rewrite the following question in a very casual, informal register, the way "
+        "someone would text it, keeping the exact same meaning."
+    )
+
+
+class LexicalSwap(_ModelRewrite):
+    """Swap words for synonyms / equivalent notation — same meaning, different surface tokens.
+
+    Tests whether the answer rides on specific wording ("zero" vs "0", "hot dog" vs
+    "frankfurter") rather than on the meaning.
+    """
+
+    kind = "lexical"
+    directive = (
+        "Rewrite the following question replacing words with synonyms or equivalent notation "
+        "wherever possible, keeping the exact same meaning."
+    )
 
 
 class TranslateWithModel:

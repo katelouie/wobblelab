@@ -8,6 +8,8 @@ from squishlab.provider import (
     picks_option_containing,
 )
 from squishlab.perturb import (
+    FormalityShift,
+    LexicalSwap,
     ParaphraseWithModel,
     Perturbation,
     Presentation,
@@ -22,7 +24,7 @@ from squishlab.report import (
     evaluate,
     score_stability,
 )
-from squishlab.squish import model_squish, squish_score
+from squishlab.squish import model_squish, squish_factor, squish_score
 from squishlab.task import MultipleChoiceTask, Outcome, Task
 from squishlab.stats import (
     bootstrap_ci,
@@ -48,6 +50,8 @@ __all__ = [
     "ReorderOptions",
     "RephraseInstruction",
     "ParaphraseWithModel",
+    "FormalityShift",
+    "LexicalSwap",
     "TranslateWithModel",
     "ModelReport",
     "evaluate",
@@ -59,5 +63,6 @@ __all__ = [
     "confident_shift",
     "bootstrap_ci",
     "squish_score",
+    "squish_factor",
     "model_squish",
 ]

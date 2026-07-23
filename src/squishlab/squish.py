@@ -69,6 +69,34 @@ def squish_score(
     return out
 
 
+def squish_factor(**signals: float) -> dict:
+    """A single 0-1 unreliability headline: the WORST of the measured squish signals.
+
+    "Squish factor" answers one question for a report card: how much can this model's answer
+    move under something that should not move it? We combine **worst-case (max)**, consistent
+    with the plane's worst-case margin (D-004) and the score's worst-case channel-combine
+    (D-007) -- a model is only as reliable as its most fragile axis, and averaging would let a
+    catastrophic position bias hide behind four calm signals.
+
+    Each keyword signal must already be a 0-1 fraction (a flip rate, an accuracy swing, a
+    normalized spread). Returns the factor, the *driving* signal, a band label, and the full
+    decomposition, so "why is it high" is always one glance away.
+
+    >>> squish_factor(reorder=0.365, position_swing=0.667, run_spread=0.198)["factor"]
+    0.667
+    """
+    clamped = {k: max(0.0, min(1.0, v)) for k, v in signals.items()}
+    factor = max(clamped.values()) if clamped else 0.0
+    driver = max(clamped, key=clamped.__getitem__) if clamped else None
+    band = "high" if factor >= 0.5 else "moderate" if factor >= 0.2 else "low"
+    return {
+        "factor": round(factor, 3),
+        "driver": driver,
+        "band": band,
+        "components": {k: round(v, 3) for k, v in clamped.items()},
+    }
+
+
 def model_squish(scored_rows: list[dict]) -> dict:
     """Model-level headline: central tendency across the battery + worst offenders.
 

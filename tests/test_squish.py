@@ -58,3 +58,23 @@ def test_model_squish_aggregates_and_ranks():
     assert m["max_squish"] == 0.53
     assert m["worst_offenders"][0]["name"] == "a"
     assert m["n_prompts"] == 3
+
+
+# --- squish_factor: the report-card headline (worst-case combine) ---
+
+from squishlab import squish_factor  # noqa: E402
+
+
+def test_squish_factor_is_worst_case():
+    f = squish_factor(reorder=0.365, position_swing=0.667, run_spread=0.198)
+    assert f["factor"] == 0.667  # the worst signal, not an average
+    assert f["driver"] == "position_swing"
+    assert f["band"] == "high"
+    assert f["components"]["reorder"] == 0.365  # decomposition retained
+
+
+def test_squish_factor_bands_and_clamping():
+    assert squish_factor(a=0.05)["band"] == "low"
+    assert squish_factor(a=0.3)["band"] == "moderate"
+    assert squish_factor(a=1.4)["factor"] == 1.0  # clamped into [0,1]
+    assert squish_factor()["factor"] == 0.0  # no signals -> zero, no crash
