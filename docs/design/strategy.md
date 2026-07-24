@@ -43,12 +43,13 @@ fixable, and the value is specifically in policing *close* comparisons.
 ## The leaderboard-harness reality
 
 **No single canonical harness is used for reporting, and the divergence is the evidence that this
-matters.** *(confidence: high on the pattern, verify current specifics)* The same model routinely
-has published scores several points apart depending on who ran it: the Open LLM Leaderboard
-standardized on lm-eval-harness with specific settings, and self-reported paper numbers often
-differ from it by several points on the same benchmark; providers run internal, prompt-engineered
-evals and report optimized numbers that are not the authors' reference harness (especially GPQA /
-MMLU-Pro, where prompting buys real points).
+matters.** *(verified)* Concrete: HuggingFace's own writeup found **LLaMA 65B on MMLU scored 0.637
+(Original) / 0.637 (HELM) / 0.488 (Eleuther Harness)** — a **~15-point** swing on the same model
+and benchmark, purely from prompt formatting ("Choices:" prefix, dropped topic line) and answer
+extraction (single-letter probability vs generated-text-match vs full-sequence log-likelihood).
+Providers add a fourth number by running internal, prompt-engineered evals. And it is plural even
+inside one framework: lm-eval's GPQA is a 0-shot multiple-choice readout, not the authors'
+free-generation CoT harness.
 
 Two consequences:
 - Strongest real-world evidence that harness wobble is consequential: **one model, many numbers.**
@@ -58,12 +59,14 @@ Two consequences:
 
 ## The commoditized-infrastructure reality (the biggest build decision)
 
-**Centralized canonical-harness batteries already exist.** *(confidence: high that they exist;
-verify exactly what they encode/perturb)*
-- **lm-evaluation-harness (EleutherAI)** — de facto standard, hundreds of tasks with
-  prompts/few-shot/scoring/extraction programmed in; what the Open LLM Leaderboard runs.
-- **HELM (Stanford)** — holistic eval that *already includes robustness perturbations* (typos,
-  casing, etc.).
+**Centralized canonical-harness batteries already exist.** *(verified)*
+- **lm-evaluation-harness (EleutherAI)** — de facto standard, what the Open LLM Leaderboard runs.
+  Declarative YAML + Jinja2; ships GPQA (`leaderboard_gpqa`, 0-shot MC) and MMLU-Pro
+  (`leaderboard_mmlu_pro`, 5-shot CoT) with prompts/shots/extraction programmed in. Wrap-able.
+- **HELM (Stanford)** — holistic eval that *already runs input-perturbation robustness*: a
+  collection of perturbations (typos for robustness, dialect for fairness), scored as **worst-case
+  accuracy** before vs after. So input perturbation is taken; it reports worst-case drop, not a
+  per-comparison "is this gap real," and not the harness-choice or systems axes.
 - **lighteval (HF), Inspect (UK AISI), OpenCompass** — others.
 
 **Decision this forces: wrap, don't rebuild.** Wrap lm-eval-harness (or lighteval / Inspect) as
@@ -112,20 +115,36 @@ Higher value, more bespoke. This is where a reliability card would actually chan
   number ± the harness you used" credibility hook, then deliver the real value in a
   production-reliability card for a *specific* use case.
 
+## A sharper benchmark-lens product (from the research)
+
+The strongest benchmark-lens play is probably **not perturbations we invent** (HELM has input
+perturbation; inventing our own invites "is that a real harness anyone uses?"). It is
+**quantifying the spread across the harnesses people already use** — lm-eval vs HELM vs the
+authors' reference vs the provider's reported number — and reporting **which model comparisons
+survive that spread.** The LLaMA-65B 15-point example is the proof of concept: those are four
+real, named, defensible harnesses, and the gap between them is the wobble. This is more credible
+than a synthetic perturbation and it directly attacks the saturated-leaderboard problem.
+
 ## What this changes in the architecture
 
 - Add a decision to `architecture.md`: **the canonical anchor is sourced by wrapping an existing
   harness (lm-eval-harness et al.), not hand-rolled per benchmark.** `Benchmark` becomes a thin
   adapter over the wrapped harness's task definition plus our knobs and gates.
+- The harness-choice "knob" is often a **swap between named real harnesses**, not a synthetic
+  tweak. Support "run this model under lm-eval's / HELM's / the authors' harness and report the
+  spread" as a first-class study.
 - Lead with the **production lens** for the sharp claims; keep the benchmark lens for credibility.
 
-## Open empirical questions (the immediate research task)
+## Open empirical questions
 
-- What exactly does **lm-eval-harness** encode for GPQA / MMLU-Pro (prompt, shots, extraction),
-  and does it expose the hooks we need to perturb around the canonical harness?
-- What robustness perturbations does **HELM** already run, and how does it report them? Where is
-  the gap our reporting/framing fills?
-- How divergent are **published numbers for one model** across leaderboard / paper / provider, on
-  a couple of concrete benchmarks? (Quantify the "one model, many numbers" claim.)
-- Does anyone already ship a **per-model reliability card** with honest CIs + fragility? If so,
-  what is missing?
+*Resolved:* lm-eval ships GPQA/MMLU-Pro as wrap-able tasks; HELM runs input-perturbation
+robustness (typos/dialect, worst-case); one-model-many-numbers is real and large (~15pt on
+LLaMA-65B MMLU).
+
+*Still open:*
+- Does lm-eval expose the **hooks** we need to swap scoring / shots / budget and run our knobs
+  around its task, or do we fork the task definitions? (Determines wrap effort.)
+- **HELM's perturbation module** in code detail: exactly which perturbations, how worst-case is
+  computed, whether any CI is reported. Sets the precise niche boundary.
+- Does anyone ship a **per-model reliability card** with honest CIs + fragility? If so, what is
+  missing? (The reporting-side gap is the moat; confirm it is open.)

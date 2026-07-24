@@ -109,12 +109,54 @@ the argument for `Benchmark` owning its canonical harness, not just its data
 
 ---
 
+## Centralized eval harnesses: lm-evaluation-harness and HELM
+
+Repos: [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) ·
+[Stanford CRFM HELM](https://github.com/stanford-crfm/helm).
+
+The canonical-harness batteries already exist, which is why WobbleLab should **wrap, not rebuild**.
+
+- **lm-eval-harness** — the de facto standard, what the Open LLM Leaderboard runs. Tasks are
+  declarative YAML with Jinja2 templates; it ships GPQA (`leaderboard_gpqa`, **0-shot**) and
+  MMLU-Pro (`leaderboard_mmlu_pro`, **5-shot, CoT**) with prompts / few-shot / extraction
+  programmed in. Note this makes "canonical" plural even inside one framework: lm-eval's GPQA is
+  a 0-shot multiple-choice readout, **not** the authors' free-generation "(X)" CoT harness, and
+  its MMLU-Pro is 5-shot CoT-gen. So lm-eval's number, the authors' number, and a provider's
+  number are three different harnesses.
+- **HELM** — holistic eval that **already runs input-perturbation robustness**: a collection of
+  perturbations (typos for robustness, dialect for fairness), scored as **worst-case accuracy**
+  before vs after. This directly bounds WobbleLab's niche: input perturbation is taken. Our gap
+  is elsewhere — **harness-choice** wobble (scoring / shots / CoT / budget across *named real*
+  harnesses), the **systems / nondeterminism** axis, **honest CIs** that dissolve close
+  comparisons, and the **reliability-card** framing. HELM reports worst-case drop, not a
+  per-comparison "is this gap real."
+
+**So what for WobbleLab.** Wrap lm-eval-harness (or lighteval / Inspect) as the anchor provider;
+the differentiation is the reporting and the two-lens split, not the eval plumbing. Read HELM's
+perturbation module in detail before finalizing the niche.
+
+## The "one model, many numbers" divergence (the harness-wobble evidence)
+
+The strongest real-world evidence that harness choice moves the number, from HuggingFace's own
+[Open LLM Leaderboard MMLU writeup](https://huggingface.co/blog/open-llm-leaderboard-mmlu):
+
+> **LLaMA 65B on MMLU: 0.637 (Original) · 0.637 (HELM) · 0.488 (Eleuther Harness, Jan 2023)** —
+> a **~15-point** swing on the *same model and benchmark*, purely from implementation.
+
+Causes: prompt formatting (the Harness dropped the topic line and added a "Choices:" prefix),
+and answer extraction (Original compared single-letter probabilities; HELM generated text and
+matched a letter; the Harness scored full-answer-sequence log-likelihood including explanation
+text). Combined with the documented **MMLU-Pro saturation** (frontier models cluster in the
+88-94% band, rank order "increasingly noise-driven"), this is the empirical spine of the
+benchmark lens: the sharpest product is not perturbations we invent, it is **quantifying the
+spread across the harnesses people already use, and reporting which model comparisons survive
+it.** See [../design/strategy.md](../design/strategy.md).
+
 ## Threads to chase (backlog for this doc)
 
 - The original **MMLU** position-bias / "always-C" literature (Zheng et al., *Large Language
-  Models Are Not Robust Multiple Choice Selectors*), which is the direct academic precedent for
-  our F-017 position-swing finding.
-- **lm-evaluation-harness** (EleutherAI) defaults: what its out-of-the-box scoring actually is,
-  since "we ran the harness once" is the exact practice WobbleLab argues against.
-- Anthropic / OpenAI eval cards that do or don't report CIs, as evidence of the gap WobbleLab
-  fills on the reporting side.
+  Models Are Not Robust Multiple Choice Selectors*), the academic precedent for position-swing.
+- **HELM's perturbation module** in code-level detail: exactly which perturbations, how worst-case
+  is computed, whether any CI is reported. Determines the precise niche boundary.
+- Whether anyone ships a **per-model reliability card** with honest CIs + fragility, and what is
+  missing from it (the reporting-side gap).
