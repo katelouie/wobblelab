@@ -1,5 +1,13 @@
 """squishlab -- measuring how much LLM answers move under things that shouldn't matter."""
 
+from squishlab.cards import (
+    JSONRenderer,
+    Panel,
+    ReliabilityCard,
+    SVGCardRenderer,
+    benchmark_card,
+    production_card,
+)
 from squishlab.client import CONTROLLED, OllamaClient
 from squishlab.provider import (
     MockProvider,
@@ -65,4 +73,10 @@ __all__ = [
     "squish_score",
     "squish_factor",
     "model_squish",
+    "ReliabilityCard",
+    "Panel",
+    "benchmark_card",
+    "production_card",
+    "SVGCardRenderer",
+    "JSONRenderer",
 ]
