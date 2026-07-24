@@ -192,6 +192,14 @@ def test_default_task_reports_single_reorder_kind():
     assert set(r.squish_by_kind) == {"reorder"}
 
 
+def test_concurrency_produces_identical_results():
+    # A thread pool must not change the numbers -- aggregation is order-deterministic.
+    prov = MockProvider(always_position(0))
+    seq = evaluate(prov, ITEMS, scoring="gen", n_rerun=3, concurrency=1)
+    par = evaluate(prov, ITEMS, scoring="gen", n_rerun=3, concurrency=8)
+    assert seq.to_dict() == par.to_dict()
+
+
 # --- Pillar 1: run-to-run variance from nondeterminism ---
 
 

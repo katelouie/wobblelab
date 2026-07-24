@@ -9,6 +9,7 @@ from squishlab.cards import (
     production_card,
 )
 from squishlab.client import CONTROLLED, OllamaClient
+from squishlab.openai_provider import OpenAICompatibleProvider
 from squishlab.provider import (
     MockProvider,
     Provider,
@@ -45,6 +46,7 @@ __version__ = "0.0.1"
 
 __all__ = [
     "OllamaClient",
+    "OpenAICompatibleProvider",
     "CONTROLLED",
     "Provider",
     "MockProvider",

@@ -131,6 +131,7 @@ def evaluate(
     n_rerun: int = 5,
     boot_seed: int = 1,
     seed_offset: int = 0,
+    concurrency: int = 1,
 ) -> ModelReport:
     """Run one model on one benchmark and return its report.
 
@@ -142,12 +143,49 @@ def evaluate(
     observational squish (does it change across reruns), and — for choice tasks — accuracy by
     answer position + the chosen-letter distribution. Variable option counts are handled;
     position stats aggregate over whichever slots actually occur.
+
+    ``concurrency`` > 1 dispatches the provider calls through a thread pool (the aggregation
+    is unchanged and order-deterministic, so the numbers are identical to the sequential run).
+    It only helps against a server that batches concurrent requests -- vLLM, llama.cpp's
+    ``--parallel`` server, mlx-lm, or ollama with ``OLLAMA_NUM_PARALLEL`` set.
     """
     if not items:
         raise ValueError("no items to evaluate")
     task = task or MultipleChoiceTask(scoring=scoring)
     rerun = 1 if getattr(task, "deterministic", False) else n_rerun
 
+    # Phase 1: the perturbations for each item (model-based kinds make perturber calls here).
+    per_item_perts = [task.perturbations(item) for item in items]
+
+    # Phase 2: run every (item, perturbation, rerun) provider call. The provider stays
+    # synchronous; a thread pool just keeps many requests in flight so a batching server
+    # (vLLM / llama.cpp / mlx) can coalesce them. concurrency=1 -> sequential, identical output.
+    units = [
+        (i, j, s)
+        for i, perts in enumerate(per_item_perts)
+        for j in range(len(perts))
+        for s in range(rerun)
+    ]
+
+    def _run_unit(u):
+        i, j, s = u
+        return u, task.run(
+            provider, items[i], per_item_perts[i][j], seed_offset * 1000 + s
+        )
+
+    outcomes: dict[tuple[int, int, int], object] = {}
+    if concurrency > 1 and len(units) > 1:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            for u, o in pool.map(_run_unit, units):
+                outcomes[u] = o
+    else:
+        for u in units:
+            outcomes[u] = _run_unit(u)[1]
+
+    # Phase 3: aggregate. Pure, order-deterministic, reads the gathered outcomes -- so the
+    # numbers are identical whether the calls ran sequentially or concurrently.
     per_item_acc: list[float] = []
     per_item_interv: list[float] = []
     obs_terms: list[float] = []
@@ -158,16 +196,16 @@ def evaluate(
     kind_flip: dict[str, int] = {}
     max_slots = 0
 
-    for item in items:
+    for i, item in enumerate(items):
         modal_contents = []  # one modal content per presentation
         pres_kinds = []  # the kind of each presentation, aligned with modal_contents
         correct = 0
         graded = 0
-        for pres in task.perturbations(item):
+        for j, pres in enumerate(per_item_perts[i]):
             contents = []
             kind = getattr(pres, "kind", "perturbation")
             for s in range(rerun):
-                o = task.run(provider, item, pres, seed_offset * 1000 + s)
+                o = outcomes[(i, j, s)]
                 if o.correct is not None:
                     graded += 1
                     correct += int(o.correct)
