@@ -28,6 +28,9 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **D-009** | **Harness wobble = sweep the eval harness on fixed items.** Two axes: scoring (`gen` = sample+parse a letter vs `ll` = argmax over first-token letter logprobs, the official method) × shots (0 vs 5, exemplars from MMLU's `dev` split). Metric = **natural-position accuracy** (the leaderboard number), CI bootstrapped over items; spread across the 2×2 = harness wobble, main effects decompose it. `ll` via ollama native `/api/chat` `logprobs:true, top_logprobs:20`. | F-019 argued official-vs-ours is "not directly comparable"; this turns that argument into a *quantified decomposition* — how many points are scoring vs shots vs everything-else — instead of a hand-wave. Same items/seed as bench.py so `gen/0-shot` cross-checks F-017. |
 | **D-010** | **Concurrency lives in the harness, not the provider; one OpenAI-compatible adapter reaches every batching backend.** `evaluate(concurrency=N)` thread-pools the provider calls while aggregation stays pure and order-deterministic (identical numbers to the sequential run). Providers stay synchronous (`ask` / `rank_letters`); a single `OpenAICompatibleProvider` points at vLLM / llama.cpp / mlx / ollama-`/v1` / hosted by `base_url`. | Backends batch *server-side* when you keep many requests in flight — so the client just needs concurrency + a portable HTTP shape, and one adapter covers local *and* remote. Keeps the harness backend-agnostic and the IP-clean local↔GPU switch a one-line change (F-024). |
 | **D-011** | **The canonical operating point is the origin; every number is the anchor or a measured deviation from it.** A sweep or wobble test moves one knob around the benchmark's official settings (prompt, shots, scoring, extraction, temperature, token budget), which must sit comfortably *interior* to any swept range, never clipped at an edge. Know the official settings before designing the measurement, and validate the anchor against the authors' published score. | A measurement taken in a regime the benchmark is never run in describes a harness nobody uses, not the benchmark; anchoring to canonical is what makes a movement attributable. Full model: [docs/design/architecture.md](design/architecture.md). |
+| **D-012** | **Wrap existing harnesses; don't rebuild. A named harness is a `Harness` config in one uniform engine, and the sweep runs *between* them.** lm-eval / HELM / Inspect / authors' each = a point in knob-space; re-implement each as a config, validate via the handshake (reproduce its published number), measure the landmarks + one-knob-at-a-time from the anchor. | The eval *measurement* is commoditized (lm-eval, HELM, Inspect); the moat is honest reporting + synthesis. A uniform parameterization is the only way "sweep between harnesses" is coherent and the only way our systems knobs compose. Same model, many published numbers (LLaMA-65B MMLU 0.637/0.637/0.488 = 15pt from harness alone). See strategy.md, research/harness-comparison.md. |
+| **D-013** | **The headline output is the *resolution limit*, on a Generalizability-Theory backbone; attribute with Shapley effects; label every number's aggregation level.** "This benchmark resolves models > N points apart." Variance decomposed across facets (model / item / seed / temp / harness / systems); Shapley effects (not ANOVA) so components sum to 100%; item- vs aggregate-level variance never conflated (they differ ~√N). | The useful thing is not another number, it is a statement of how much you can trust the numbers. G-theory is the right formalism and ML eval doesn't use it — the literature-gap arbitrage, and the actual comparative advantage. Sophistication is an adoption tax: `--quick` prints the one number, `--full` the decomposition. From the 2026-07-24 practitioner + Desktop conversations. |
+| **D-014** | **A versioned roadmap (POC → V0 → V1 → V2 → V3+) is the scope-spiral guard; pass/fail DV through V1; code-quality-and-reliability deferred to V2.** Each version ships one thing with an explicit *out-of-scope* list; do not build vN+1 inside vN. | Contested quality metrics are a free exit for critics — establish the variance machinery on an unimpeachable DV first. Compute is the constraint that kills personal projects. See docs/design/roadmap.md. |
 
 ## Findings ledger
 
@@ -480,6 +483,54 @@ v0.0.1, don't delete); rename the GitHub repo (auto-redirects); optionally renam
   the blanks. Do this in wobblelab, after the rename lands.
 - vLLM pod adapter for the real-model spike (adapter exists; needs pod config + IP clearance).
   Backend bake-off (F-024): llama.cpp `--parallel` is the fast local pick (~28 req/s, keeps ll).
+
+## 2026-07-24 — the reset: measure the benchmark, not our harness
+
+The big pivot. The earlier GPQA work measured a model under a harness we *improvised* (terse
+"answer with only the letter", a budget-starved 256 tokens), not the benchmark's canonical
+harness — so the numbers described our harness, not the benchmark. Stopped, deleted the
+provisional GPQA writeup, and rebuilt around a principle instead of chasing artifacts.
+
+**The architecture** (full spec: [design/architecture.md](design/architecture.md)). Wobble is
+*sensitivity analysis around a canonical anchor*. The canonical operating point is the origin;
+every number is the anchor or a measured deviation from it (D-011). Two lenses with *different*
+anchors: benchmark validity (anchor = the authors' harness) and production reliability (anchor =
+the user's real operating point). Knobs are `Harness -> [Harness]` transforms; sweep and wobble
+are the same machinery.
+
+**Wrap, don't rebuild** (D-012). Research confirmed the canonical harnesses already exist in
+lm-eval (GPQA 0-shot MC-log-likelihood; MMLU-Pro 5-shot CoT), HELM (which already does
+input-perturbation robustness, worst-case), and Inspect (Anaconda's, CoT + `ANSWER: $LETTER` + 4
+epochs). GPQA is scored at least three genuinely different ways; the same model carries many
+published numbers. So the product is *quantifying the spread across the real named harnesses*, not
+perturbations we invent. Catalog in [research/harness-comparison.md](research/harness-comparison.md).
+
+**The headline: the resolution limit** (D-013), sharpened by two conversation sets on 2026-07-24.
+The Anaconda evals guild (real practitioners): Mark's harness-transfer pain ("the model's amazing,
+then it's worse in my environment — the harness"), Albert's sharp *benchmark vs eval* line (raw
+single-call LLM vs a harness in the middle — WobbleLab is at the benchmark level, not the agentic
+level), Denis noting the model×harness product "doesn't exist, may be a good idea." And Claude
+Desktop, which supplied the rigorous spine: Generalizability Theory, Shapley-effect variance
+attribution, the heteroskedastic per-item floor, the batch-invariant control arm, `pass^k` /
+solution entropy, and the crisp framing that *the resolution limit is the tool; everything else is
+a research program.* Closest prior art: **SCORE** and **POSIX** — read before claiming novelty.
+
+**Batch nondeterminism as a first-class facet.** Temp-0 multi-run isolates the systems floor;
+measure it with a fixed concurrency×shuffle-seed factorial reused verbatim across every run; the
+floor is heteroskedastic (stratify per difficulty); batch-invariant kernels give a clean control
+arm for open models. The instinct that shaped this: *measure the batch-attributable variance,
+don't try to eliminate it.*
+
+**The roadmap** (D-014, [design/roadmap.md](design/roadmap.md)): POC (handshake) → V0 (the
+resolution limit) → V1 (the benchmark reliability instrument) → V2 (production lens +
+code-quality-and-reliability) → V3+ parked. Pass/fail DV through V1. The scope-spiral guard.
+
+**Infra.** Remote GPU wired up (RunPod 4090 + vLLM, env-configurable backend, on-pod runs needed
+for the batch factorial to be real). New docs this session: architecture, strategy, roadmap,
+harness-comparison, plus the reliability/variance and code-quality prior-art in research/notes.
+
+Net: nothing built yet on the new core (pre-POC), but the design, the positioning, and the
+honest prior-art map now hang together, and the roadmap gives a real "am I in scope?" checkpoint.
 
 ## Open questions / backlog
 
