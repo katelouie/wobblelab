@@ -456,8 +456,14 @@ one fast-forward commit on `main` (local; not yet pushed — push waits on the G
   green (60). Bumped `pyproject.toml` `0.0.1 → 0.1.0` and refreshed the `description` to the
   wobble one-liner. Committed on `rename-wobblelab`, fast-forwarded to `main`, deleted the branch.
 
-**STILL OPEN (not blocking):** result/pitch **PNGs still show "SQUISH" baked into the pixels**
-(can't sed an image) — regenerate the charts to fix; filenames + JSON keys are already renamed.
+**PNG text fixed (2026-07-23, after publish).** The six public-facing figures (README + pitch)
+had "SQUISH" baked into their pixels. Re-running the experiments would have redrawn the text but
+also resampled the model and moved the cited numbers — breaking the receipts. Instead added
+`experiments/replot.py`: it reads each figure's saved JSON and calls the same `plot()` the
+original run used, with the already-renamed title strings. Same data, corrected labels, no model.
+Regenerated `wobble_plane_v02`, `harness_/bench_/pillars_world_religions`, `config_ab`, and
+`wobble_scores_v02` (via `score.py`). `xlingual.png` had no squish text (byte-identical redraw).
+The superseded v0.1 / "real" wobble planes are journal-only dated snapshots, left as-is.
 
 **Kate's account-level TODOs (not code):** claim `wobblelab` on PyPI (it's free; 404 confirmed)
 + configure Trusted Publishing pending-publisher for it; leave/tombstone `squishlab` (published
