@@ -141,17 +141,36 @@ different logits; at a near-tied greedy token that flips the argmax and can casc
 divergent completion. In a live server this reads as run-to-run nondeterminism because concurrent
 load varies the batch. (See Thinking Machines, "Defeating Nondeterminism in LLM Inference," 2025.)
 
-**So how we measure it.** A plain temp-0 replay that re-sends the same items at the same
-concurrency may batch near-identically and show ~0 variance. That *understates* the floor, it
-does not prove it is absent. To measure it we deliberately **vary the batch composition**: a
-batch-composition knob that runs the same item alone vs. in batches of increasing size (or under
-varying concurrency) and reports how often the greedy output flips. That is the controlled
-isolate. A plain N-times replay catches the floor only to the extent that continuous-batching
-timing jitter varies the batches on its own, so the batch-composition knob, not identical
-replays, is the real measurement.
+**So how we measure it: a fixed (concurrency × shuffle-seed) grid, reused everywhere.** A plain
+temp-0 replay at the same concurrency may batch near-identically and show ~0 variance, which
+*understates* the floor rather than disproving it. So the base run is a small **2-factor
+factorial**, and it is *identical for every model × benchmark × harness* so the floors are
+directly comparable and reproducible:
 
-The anchor score is the mean across the N base runs; the run-to-run spread is reported alongside
-it as observational wobble at the canonical temperature.
+- **concurrency levels** `{C1, C2, C3}` (e.g. `{32, 64, 128}`, kept high for GPU efficiency) vary
+  the batch **size / shape**;
+- **shuffle seeds** `{s1..sk}` reshuffle the question order, varying the batch **composition** a
+  given question is processed alongside;
+- their cross-product (all at temp 0) is the ~20 base runs. Fix this grid in config; reuse it
+  verbatim.
+
+Add a **fixed-order (unshuffled) control**, one per concurrency level: if the control also wobbles,
+that variance is *other* systems nondeterminism (atomics / autotuning), not composition. From the
+factorial: the full spread across cells is the **total floor**; marginalizing over seeds at each
+concurrency isolates the **size** effect; over concurrency at each seed isolates the
+**composition** effect. Report the decomposition, plus **per-question flip rate** and aggregate
+spread (the aggregate can look tiny while real per-question flips cancel in the mean).
+
+Two honest caveats. (1) The batch-invariance literature points at batch **size / shape** as the
+primary axis; pure composition at a truly fixed shape may be small (it enters mainly via attention
+packing and variable sequence lengths), so let the factorial say which factor dominates rather
+than assuming. (2) The concurrency factor only varies the *real* server-side batch if requests
+actually arrive concurrently — an SSH tunnel that caps effective concurrency flattens it into one
+batch size, so run the client **on-pod or via a direct port** for this measurement, not through a
+throttling tunnel.
+
+The anchor score is the mean across the base-run cells; the run-to-run spread is the observational
+wobble at the canonical temperature, decomposed into the systems floor above.
 
 ---
 
@@ -318,8 +337,10 @@ values, params, all present.
   in `src/wobblelab/`, then make `experiments/` thin callers.
 - **Benchmark-validity lens first.** It is where the reference-score handshake lives, and that
   handshake disciplines everything else. Production lens second.
-- **Multi-run N default** for the base run: start at N = 10 (tunable), so the temp-0
-  nondeterminism floor is always visible.
+- **Base run = a fixed (concurrency × shuffle-seed) factorial**, reused verbatim on every model ×
+  benchmark × harness, at temp 0 (default e.g. `{32,64,128} × 7 seeds` ≈ 21, tunable), plus a
+  fixed-order control per concurrency level. Decompose into size vs composition; run on-pod so the
+  concurrency factor is real.
 
 ---
 
