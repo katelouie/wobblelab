@@ -48,13 +48,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from wobblelab import OpenAICompatibleProvider  # noqa: E402
+from backend import BACKEND_LABEL, MODEL_LABEL, make_provider  # noqa: E402
 from wobblelab.benchmark import LETTERS, format_prompt, parse_answer  # noqa: E402
 from wobblelab.loaders import load_gpqa_diamond  # noqa: E402
 
-MODEL = "qwen3:0.6b"
-BASE_URL = "http://localhost:8080/v1"
-THINK_OFF = {"chat_template_kwargs": {"enable_thinking": False}}
+MODEL = MODEL_LABEL
 CONCURRENCY = 8
 BUDGETS = [4, 8, 16, 32, 64, 128, 256]
 PLATEAU_BUDGET = 256  # for the corrected variance pass
@@ -99,12 +97,7 @@ def _map(fn, items):
 
 def greedy_pass(items, prompt_fn, extract_fn, budget) -> dict:
     """One deterministic pass: accuracy + parse coverage under a given format + budget."""
-    prov = OpenAICompatibleProvider(
-        MODEL,
-        base_url=BASE_URL,
-        options={"temperature": 0.0, "max_tokens": budget},
-        extra_body=THINK_OFF,
-    )
+    prov = make_provider(options={"temperature": 0.0, "max_tokens": budget})
 
     def one(item):
         raw = prov.ask(prompt_fn(item), seed=0)
@@ -125,12 +118,7 @@ def greedy_pass(items, prompt_fn, extract_fn, budget) -> dict:
 
 def sampled_run(items, prompt_fn, extract_fn, budget, seed) -> float:
     """One sampled pass (temp 1.0) at a fixed seed; accuracy over the natural order."""
-    prov = OpenAICompatibleProvider(
-        MODEL,
-        base_url=BASE_URL,
-        options={"temperature": 1.0, "max_tokens": budget},
-        extra_body=THINK_OFF,
-    )
+    prov = make_provider(options={"temperature": 1.0, "max_tokens": budget})
 
     def one(item):
         raw = prov.ask(prompt_fn(item), seed=seed)
@@ -207,7 +195,7 @@ def main():
     out = {
         "benchmark": "GPQA-Diamond",
         "model": MODEL,
-        "backend": "llama.cpp --parallel 8",
+        "backend": BACKEND_LABEL,
         "n_items": len(items),
         "canonical_by_budget": canonical,
         "terse_contrast": terse,
@@ -290,7 +278,7 @@ def plot(canonical, terse, runs, mean, std, path):
     )
 
     fig.suptitle(
-        f"WobbleLab · GPQA-Diamond harness sweep · {MODEL} (llama.cpp)",
+        f"WobbleLab · GPQA-Diamond harness sweep · {MODEL} ({BACKEND_LABEL})",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",

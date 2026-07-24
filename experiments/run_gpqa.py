@@ -31,10 +31,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
+from backend import BACKEND_LABEL, MODEL_LABEL, make_provider  # noqa: E402
 from wobblelab import (  # noqa: E402
     MultipleChoiceTask,
     NaturalOrder,
-    OpenAICompatibleProvider,
     evaluate,
     score_stability,
 )
@@ -42,8 +42,8 @@ from wobblelab.benchmark import LETTERS  # noqa: E402
 from wobblelab.loaders import load_gpqa_diamond  # noqa: E402
 
 BENCHMARK = "GPQA-Diamond"
-MODEL = "qwen3:0.6b"
-BACKEND = "llama.cpp --parallel 8"
+MODEL = MODEL_LABEL
+BACKEND = BACKEND_LABEL
 N_ITEMS = None  # all 198
 N_RUNS = 5
 CONCURRENCY = 8
@@ -123,11 +123,7 @@ def plot(report, stab, path):
 
 def main():
     t0 = time.time()
-    prov = OpenAICompatibleProvider(
-        "qwen3",
-        base_url="http://localhost:8080/v1",
-        extra_body={"chat_template_kwargs": {"enable_thinking": False}},
-    )
+    prov = make_provider()
     items = load_gpqa_diamond(N_ITEMS)
     print(f"loaded {len(items)} GPQA-Diamond items")
 
