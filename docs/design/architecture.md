@@ -172,6 +172,29 @@ throttling tunnel.
 The anchor score is the mean across the base-run cells; the run-to-run spread is the observational
 wobble at the canonical temperature, decomposed into the systems floor above.
 
+**The floor is heteroskedastic — estimate it per stratum, not once.** Infra noise only flips a
+token when it exceeds the top-2 logit margin, so it concentrates precisely where the model is
+uncertain, which correlates with hard items. A single global "±0.4pt floor" is therefore wrong in
+both directions: overstated on easy items, badly understated on hard ones. Estimate σ²_infra
+**per difficulty stratum** (or per top-2-margin bin). Two consequences: **adaptive N** — spend the
+sampling budget on the low-margin fragile tail identified from logprobs, not uniformly; and the
+per-stratum floor is what the resolution limit and the heatmap (facet × difficulty) are built on.
+
+**For open-weights models there is a clean control arm.** Thinking Machines' `batch_invariant_ops`
+(adopted by vLLM / SGLang, late 2025) runs a model deterministically. So run the *same* model two
+ways — batch-invariant deterministic (σ²_infra ≡ 0 reference) vs default kernels under load we
+control — and difference them for a **causal** estimate of infra-induced variance, model and
+prompt held fixed. The shuffle-factorial above is the API-side estimator (batch composition is
+latent, inferred from replication residual); the kernel arm is the lab-clean one. Do not lean on
+the deterministic arm as the headline, though: batch-invariant kernels are a poor fit for
+production serving, so the noise on real endpoints is a *permanent feature of the deployment
+surface*, not an artifact in transit to being fixed — which is the argument for treating it as a
+first-class facet rather than something to control out.
+
+Two traps: **prefix caching** silently suppresses variance on repeated identical prompts (append a
+varying trailing nonce, or disable it); and **kernel/library versions change numerics** even under
+a pinned model string, so version-stamp and date-stamp every run.
+
 ---
 
 ## Knob taxonomy
@@ -286,28 +309,69 @@ not new machinery, it is the data model applied to the benchmark lens.
 
 ---
 
+## The headline output: the resolution limit, on a variance-decomposition backbone
+
+The single most useful thing the benchmark lens produces is a **resolution limit**: given the
+measured noise, *the minimum score gap between two models that is statistically distinguishable.*
+"This benchmark resolves models more than **N** points apart, and no finer." One number, legible
+without any statistics background, and (as far as we can tell) nobody publishes it. It reframes
+every leaderboard row in four seconds. This is the tool; everything else is the machine that
+produces it.
+
+**The backbone is Generalizability Theory** (psychometrics, Cronbach — a formalism ML eval almost
+never uses, which is the literature gap this project arbitrages). Declare the **facets** (model,
+task/item, sampling seed, temperature, harness-config, batch/systems), run a crossed or
+partially-crossed design, and get a **variance component per facet** plus a **generalizability
+coefficient**: the fraction of observed score variance attributable to the thing you meant to
+measure. The resolution limit falls out of the noise components directly.
+
+**Attribution uses Shapley effects** (Owen, 2014 — Shapley values whose payoff is variance
+explained), *not* a naive variance-components ANOVA. The interactions here are large (infra noise
+× item difficulty is the whole heteroskedasticity story below), so ANOVA leaves a residual blob
+that does not sum to the total; Shapley effects distribute interaction variance fairly so the
+components sum to 100% — the property a waterfall chart implicitly promises. Companion: Sobol
+first-order `S_i` vs total-effect `S_Ti`, whose gap is factor `i`'s interaction share. Run
+**Morris screening first** (cheap) to pick which facets deserve a full budget.
+
+**The aggregation-level guardrail (non-negotiable honesty).** Aggregate benchmark variance is
+~√N smaller than item-level variance. Decompose item-level outcomes and present the shares as
+leaderboard stability and you will claim "this benchmark is noise" when the defensible claim is
+"individual item outcomes are largely noise, but the 164-item aggregate resolves to ±1.2 points."
+Both are true at different levels; only one is true at the level a chart implies. **Every figure
+and number is labeled with its aggregation level.** The resolution limit is an aggregate-level
+statement.
+
+**Sophistication is an adoption tax.** `--quick` prints one interval and the resolution limit;
+`--full` gives the variance decomposition and the Shapley waterfall. The elegant math belongs in
+the presentation, never in the interface.
+
+---
+
 ## The audit JSON
 
 One self-describing object per study. Someone should be able to reproduce the run and verify
 every number from this file alone.
 
 ```
-run_id, wobblelab_version, environment{python, os, concurrency, gpu?}
+run_id, wobblelab_version, environment{python, os, gpu?, kernel_lib_versions}  # versions matter
 started_at, ended_at, runtime_seconds
 provider   { model, backend_label, sampling_defaults }         # secrets and IPs sanitized OUT
 benchmark  { name, variant, dataset_id, split, n_items, item_shuffle_seed, reference_scores }
 canonical  { full Harness spec: prompt_template, shots, scoring, extraction, temp, budget, stop }
-anchor     { metric, value, ci, coverage, n_runs, run_to_run_spread,
-             reference_delta, gates{handshake, coverage, truncation} }
+anchor     { metric, value, ci, coverage, aggregation_level, reference_delta,
+             gates{handshake, coverage, truncation} }
+systems_floor { per_stratum[{ difficulty|margin_bin, sigma2_infra, n }], global, control_arm? }
 studies[]  { knob, family, meaning_preserving, values[],
-             results[]{ value, metric, coverage, ci, runtime_seconds, started_at, ended_at },
-             runtime_seconds }
-wobble_summary { per-knob magnitude, the hierarchy (ranked), combined score }
-call_log_ref   # optional path to per-call log: prompt_hash, seed, raw_output, parsed, truncated
+             results[]{ value, metric, coverage, ci, aggregation_level, runtime_seconds } }
+variance_decomposition { facets, components{facet: sigma2}, shapley_effects{facet: share},
+                         generalizability_coefficient }
+resolution_limit { value, aggregation_level, method }          # THE headline number
+call_log_ref   # optional per-call log: prompt_hash, seed, raw_output, parsed, truncated, top2_margin
 ```
 
-Runtimes and timestamps at every level (per-call optional, per-study, total). Configs, knobs,
-values, params, all present.
+Runtimes and timestamps at every level. Configs, knobs, values, params, all present. **Every
+metric carries its `aggregation_level`** (item vs benchmark-aggregate); the resolution limit is
+aggregate-level.
 
 ---
 
@@ -346,18 +410,12 @@ values, params, all present.
 
 ## First vertical slice
 
-Prove the architecture on one end-to-end path before adding breadth. **GPQA Diamond, three
-landmark harnesses, one known model.**
-
-1. `Benchmark` for GPQA Diamond, with three `Harness` configs: the **authors' reference**
-   (free-gen, `(A)` options, "The correct answer is (X)", extraction cascade, temp 0, plateau
-   budget), **lm-eval / Open LLM Leaderboard** (0-shot MC-log-likelihood, `acc_norm`), and
-   **Inspect** (CoT, "ANSWER: $LETTER", epochs).
-2. Run a known model under each; **handshake**: each landmark's number must land near its
-   published figure. If it does, we have three trustworthy numbers and their spread — the
-   one-model-many-numbers product, on one benchmark.
-3. Base run (N reruns) at the authors' anchor for the temp-0 systems floor.
-4. Then OAT knobs from the anchor: reorder, temperature, budget, CoT-on/off, shots.
+The build sequence, with per-version scope and explicit out-of-scope, lives in
+**[roadmap.md](roadmap.md)** (the scope-spiral guard). In brief: **POC** reproduces one named
+harness's published number through the engine (the handshake); **V0** adds the base-run systems
+floor and ships the **resolution limit**; **V1** adds the three named-harness landmarks + spread,
+the OAT knob sweep, the G-theory decomposition + Shapley attribution, and the reliability card;
+**V2** is the production-perturbation lens + code-quality-and-reliability. Pass/fail DV through V1.
 
 ---
 

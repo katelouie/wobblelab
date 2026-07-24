@@ -152,11 +152,53 @@ benchmark lens: the sharpest product is not perturbations we invent, it is **qua
 spread across the harnesses people already use, and reporting which model comparisons survive
 it.** See [../design/strategy.md](../design/strategy.md).
 
+## Reliability / variance-decomposition prior art (READ BEFORE claiming novelty)
+
+Surfaced in the 2026-07-24 conversations. The two closest existing things to our spec — read them
+first so our deltas are honestly scoped, not accidental reinvention:
+
+- **SCORE** — *the closest to our spec.* Evaluates under **10 semantically-equivalent prompts per
+  question, 5 runs at T=0.7 with different seeds, and choice-order shuffling.** That is a large
+  slice of what we do. Our honest deltas over it: the **batch/systems-noise facet**, the
+  **resolution limit**, the **G-theory variance decomposition**, and the **named-harness spread**.
+- **POSIX** — a prompt-sensitivity index built on the argument that accuracy variance across
+  templates cannot distinguish a model that is *consistently wrong* from one producing *different*
+  wrong answers per template; combines response overlap, entropy, semantic coherence, confidence
+  variation. Know it cold.
+
+The methodology backbone and tooling (our differentiator is *using* these; ML eval mostly does not):
+- **Generalizability Theory** (Cronbach, psychometrics) — variance components per facet +
+  a generalizability coefficient. The formal name for what we are building.
+- **Shapley effects** (Owen, 2014) for variance attribution; **Sobol** indices (`S_i` vs `S_Ti`)
+  for interaction structure; **Morris** screening to pick facets cheaply. Tooling: `SALib`;
+  Bayesian crossed-random-effects (`numpyro` / `pymc`) for variance components with posterior
+  intervals (beats `statsmodels.MixedLM` on crossed effects).
+- **`batch_invariant_ops`** (Thinking Machines, adopted vLLM/SGLang) — the deterministic control
+  arm for the systems floor on open models.
+- Perturbation-robustness precedents: **ReCode** (code-specific perturbations), **PromptBench**,
+  **FormatSpread** (formatting alone swings accuracy a lot), **EvalPlus** (held-out edge tests).
+- **pass^k** (all-of-k pass, the reliability dual of pass@k) and **solution entropy** (normalized-
+  AST distance across a prompt's k passing samples) — reliability statistics for the V2 code lens.
+
+## Code-quality prior art (V2 lens)
+
+For the code-quality-and-reliability work parked in V2 (see [../design/roadmap.md](../design/roadmap.md)):
+- **Clone taxonomy Type 1-4** (lexical → semantic); normalized-AST hashing, tree edit distance
+  (`zss`/`apted`), CodeBERT/UniXcoder embeddings; behavioral/differential testing (Rice's theorem:
+  exact semantic equivalence is undecidable, so all of it approximates).
+- **Cognitive complexity** (SonarSource, beats McCabe CC for readability); `radon` for CC/Halstead.
+  All complexity metrics are confounded with task difficulty — use ratios vs a reference/human
+  baseline (**Mercury**, **COMPASS** with authentic human submission distributions).
+- **Held-out test delta** (visible pass rate − adversarial-hidden pass rate) — the cleanest
+  brittleness metric. **RACE** (readability/maintainability/correctness/efficiency, requirements
+  encoded into the task); **ISO/IEC 25010** as the stakeholder-friendly dimension scaffold.
+- The trap: every code-quality metric is gameable and confounded; validate the composite against
+  human judgment before shipping, or it is a vanity dashboard. (This is why quality is V2, not V1.)
+
 ## Threads to chase (backlog for this doc)
 
 - The original **MMLU** position-bias / "always-C" literature (Zheng et al., *Large Language
   Models Are Not Robust Multiple Choice Selectors*), the academic precedent for position-swing.
-- **HELM's perturbation module** in code-level detail: exactly which perturbations, how worst-case
-  is computed, whether any CI is reported. Determines the precise niche boundary.
-- Whether anyone ships a **per-model reliability card** with honest CIs + fragility, and what is
-  missing from it (the reporting-side gap).
+- **HELM's perturbation module** in code-level detail; and read **SCORE** + **POSIX** in full.
+- Whether anyone ships a **per-model reliability card** or a **published resolution limit** — the
+  reporting-side gap that is the moat.

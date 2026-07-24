@@ -103,12 +103,23 @@ Hard problems, stated honestly:
 
 Higher value, more bespoke. This is where a reliability card would actually change a deployment.
 
+## The crisp deliverable (sharpened 2026-07-24)
+
+The benchmark lens's headline is the **resolution limit**: "this benchmark distinguishes models
+more than N points apart, and no finer." One number, legible without statistics, and nobody
+publishes it. Its backbone is **Generalizability Theory** — a psychometrics formalism ML eval
+almost never uses, which is the real comparative advantage (measurement-theory arbitrage, not
+ML-research cleverness). Full treatment in [architecture.md](architecture.md); the build ladder
+(POC → V0 → V1 → V2) in [roadmap.md](roadmap.md).
+
 ## Honest bottom line
 
 - The **instrument is largely commoditized** (lm-eval, HELM). Wrap it. The moat is honest
   reporting and framing, not novel measurement.
-- The **benchmark lens** earns a real but *narrow* claim: "which close leaderboard gaps are noise
-  once you use honest error bars." Worth doing, not world-shaking.
+- The **benchmark lens** earns a real but *narrow* claim, made crisp: **the resolution limit** —
+  "which close leaderboard gaps are noise." Worth doing, genuinely useful, not world-shaking.
+- **Closest prior art is SCORE / POSIX** (research/notes.md) — read before claiming novelty; our
+  deltas are the systems-noise facet, the resolution limit, and the G-theory decomposition.
 - The **production lens** is the differentiated, high-"so what" play: it escapes the averaging
   problem and matches the real threat model. Harder (no ground truth) but it is where the value is.
 - **Strongest product shape:** lean on wrapped-canonical benchmarks for the "your leaderboard
