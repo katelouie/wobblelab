@@ -26,6 +26,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **D-007** | **Squish score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional squish; rerun-variation is squish only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
 | **D-008** | **Bootstrap is for CIs on *derived/composite* statistics, not a substitute for reruns.** Use it for the squish score, the model-level headline (resample prompts), and benchmark accuracy (resample items — the correct unit, since reruns of one item are correlated). It is NOT a shortcut around actual sampling: resampling can't invent power, and for a plain proportion it just reproduces Wilson. The real way to spend fewer *calls* is adaptive/sequential sampling, not bootstrap. | Kate asked whether we could "bootstrap into" reruns; the honest answer is no for base rates, yes for composites — where there's no clean closed form and resampling recorded outcomes is free. |
 | **D-009** | **Harness squish = sweep the eval harness on fixed items.** Two axes: scoring (`gen` = sample+parse a letter vs `ll` = argmax over first-token letter logprobs, the official method) × shots (0 vs 5, exemplars from MMLU's `dev` split). Metric = **natural-position accuracy** (the leaderboard number), CI bootstrapped over items; spread across the 2×2 = harness squish, main effects decompose it. `ll` via ollama native `/api/chat` `logprobs:true, top_logprobs:20`. | F-019 argued official-vs-ours is "not directly comparable"; this turns that argument into a *quantified decomposition* — how many points are scoring vs shots vs everything-else — instead of a hand-wave. Same items/seed as bench.py so `gen/0-shot` cross-checks F-017. |
+| **D-010** | **Concurrency lives in the harness, not the provider; one OpenAI-compatible adapter reaches every batching backend.** `evaluate(concurrency=N)` thread-pools the provider calls while aggregation stays pure and order-deterministic (identical numbers to the sequential run). Providers stay synchronous (`ask` / `rank_letters`); a single `OpenAICompatibleProvider` points at vLLM / llama.cpp / mlx / ollama-`/v1` / hosted by `base_url`. | Backends batch *server-side* when you keep many requests in flight — so the client just needs concurrency + a portable HTTP shape, and one adapter covers local *and* remote. Keeps the harness backend-agnostic and the IP-clean local↔GPU switch a one-line change (F-024). |
 
 ## Findings ledger
 
@@ -53,6 +54,7 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-020** | **ollama's logprobs are top-20-capped but near-lossless for MC.** `top_logprobs` hard-caps at 20 (50+ → HTTP 400); it returns the top-N alternatives, not the full vocab softmax. But on a lettered-MC first token the distribution is so peaked that the top-20 captures **99.9%** of the mass, and candidate-letter coverage measured **0.95 at 0-shot / 1.00 at 5-shot** (few-shot format-anchoring closes the gap). When a letter falls outside top-20 its true prob is < e⁻⁹ ≈ 0.0001, so treating it as −∞ for the argmax is harmless. The `ll` scorer is effectively exact. | probe / harness |
 | **F-021** | **A 20-point spread from harness alone.** Same model, same 40 items: natural-position accuracy runs **0.30 → 0.50** across the four harnesses (`ll/0-shot` 0.50, `gen/0-shot` 0.41, `ll/5-shot` 0.38, `gen/5-shot` 0.30). Main effects: **scoring (ll−gen) +0.08** (reading the distribution beats sampling a letter), **shots (5−0) −0.12** (few-shot *hurts* this 0.8B, robustly across both scoring methods). So F-019's 36-vs-48.5 "gap" was mostly scoring-method + which-number-you-report, not capability: measured the official way (`ll`), our crude Q8 40-item slice brackets the official 48.5 (0.50 [0.35,0.65]). The leaderboard number is a *harness choice*, quantified. | harness |
 | **F-023** | **Config squish is small and localized on binary decisions — prediction confirmed.** Controlled full-softmax vs Qwen-recommended (top_p .95 / top_k 20 / presence 1.5), same 8-prompt battery, 150 reruns each: **mean dispersion 0.141 vs 0.140 (Δ −0.001)**, mean \|Δp_yes\| 0.019, **1/8** prompts with a Δp CI excluding zero, **0** majority flips, decidable accuracy 1.00 both. The lone confident shift is `pluto_planet` (dispersion 0.047 → **0.000**): truncation clips the residual minority mass on the one near-unanimous prompt, so "as it ships" makes the model look *slightly more* reliable exactly where it had a sliver of doubt. Pre-registered prediction (top_p/top_k barely truncate a 2-way split; presence can't touch the first token) held. Refines D-003: config squish is real but its bite scales with the *width of the output tail* — negligible on binary yes/no, and expected to matter on the MC benchmark's chosen-letter tail (where truncation would nudge `gen` toward the more-A-biased argmax, linking to F-022). | config_ab |
+| **F-024** | **Concurrency is the cheap win; llama.cpp is the fast local backend; mlx-lm's server does not batch.** Harness `concurrency` alone gave **~4.7×** on the existing ollama with no config change (10.9→2.3s on a 10-item ll pass). Head-to-head on the *identical* Qwen3-0.6B Q4_K_M GGUF (ollama vs llama.cpp) and Qwen3-0.6B-8bit (mlx), 40-prompt load, req/s: **llama.cpp** 11.3→**28** (best; ~1.9× ollama single-stream, saturates at its 8 slots), **ollama** 6.0→~18 (auto-batches to ~4), **mlx-lm** 6.1→~6 (*flat* — `mlx_lm.server` serializes concurrent requests). Turns the ~9h full-MMLU reorder pass into ~2h (ollama) / ~1.3h (llama.cpp), all local. mlx_parallm (batched `batch_generate`) fixes MLX's gap but is Python-only (no HTTP), generation-only (no logprobs → no `ll` scoring), and Qwen-unverified — so llama.cpp stays the pick. | backend bench |
 | **F-022** | **Log-likelihood scoring does *not* cure position bias — it sharpens it.** Switching gen→ll, the 0-shot position swing *grows* 0.48 → 0.70 and the chosen-A share *rises* 56% → 67%, even as debiased accuracy improves 0.36 → 0.48. Sampling at temp 1 blurs the model's positional preference (it occasionally samples off-top); argmax commits to the top logit every time, so ll is simultaneously more accurate *and* more polarized. The bias lives in the weights, not the readout — the "cleaner" scoring method exposes it undiluted rather than removing it. My "ll will fix the bias" prediction lost. | harness |
 
 ---
@@ -407,8 +409,42 @@ quantified on the same model.
 
 ---
 
+## 2026-07-23 — going faster: concurrency, an OpenAI adapter, and a backend bake-off
+
+The single-stream client made a rented A100 pointless (barely faster than the laptop). Two
+changes fixed it, and the same knob helps locally. → **D-010.** `evaluate(concurrency=N)`
+thread-pools the provider calls (aggregation stays pure/order-deterministic, so the numbers
+are byte-identical to sequential — a test asserts it), and `OpenAICompatibleProvider` reaches
+any `/v1` endpoint. The concurrency alone bought **~4.7×** on the *existing* ollama with no
+config change — ollama already batches concurrent requests up to its default parallelism.
+
+Then a real bake-off, same model on three backends (Qwen3-0.6B; llama.cpp can't load the
+qwen3.5 GGUF — a rope-config bug — so we dropped to the 0.6B, which also gave 8-bit/Q4 parity
+via the *identical* ollama GGUF blob feeding both ollama and llama.cpp). → **F-024.**
+
+- **llama.cpp** (`--parallel 8`) wins: 11.3 → **28 req/s**, ~1.9× ollama single-stream, and it
+  works through our adapter *with* logprobs (so `ll` scoring survives).
+- **ollama**: 6.0 → ~18, auto-batches to ~4. The zero-setup default.
+- **mlx-lm**: 6.1 → ~6, **flat** — `mlx_lm.server` serializes. Apple-native but not for batched
+  eval. `mlx_parallm` (Will Brown) fixes the batching via `batch_generate`, but it's Python-only
+  (no HTTP → doesn't fit the adapter), generation-only (no logprobs → loses our clean `ll`
+  path), and Qwen-unverified. Interesting, not worth it over llama.cpp yet.
+
+A bonus: the `OpenAICompatibleProvider` drove both llama.cpp and mlx `/v1` first try — the same
+adapter that will point at a vLLM pod. `experiments/backends.py` reproduces the bake-off.
+
 ## Open questions / backlog
 
+- **A `BatchProvider` seam (stub).** Offline eval has the whole prompt set upfront, so a
+  provider that takes a *batch* — `ask_batch(prompts, seeds) -> [str]` — fits better than
+  thread-pooling one HTTP call per prompt, and it's the clean plug for in-process static
+  batchers (`mlx_parallm`) and vLLM's batch API (no per-request HTTP overhead). The harness
+  would detect batch-capable providers and hand them batches; single-call providers keep the
+  thread-pool path. Only worth building if an MLX (or batch-API) backend beats llama.cpp in a
+  head-to-head — until then llama.cpp + `concurrency` covers it (F-024, D-010).
+- **vLLM adapter for the real-model spike.** `OpenAICompatibleProvider` already speaks vLLM's
+  `/v1`; the remaining work is a pod/serverless config + the IP clearance to run on company
+  vs personal resources. Est. ~$1–15 for a full-corpus 7B/70B run (rented A100/H100).
 - ~~**Match the official harness to measure harness-squish directly.**~~ **Done**
   (D-009, F-020/21/22, `experiments/harness.py`): ll + few-shot eval mode built, 2×2
   harness sweep run, 20-pt spread quantified and decomposed. Remaining threads it opened:
