@@ -88,6 +88,28 @@ class ReorderOptions:
         ]
 
 
+class NaturalOrder:
+    """The item exactly as the dataset ships it: one presentation, identity order, answer at
+    its canonical slot -- i.e. the *leaderboard* number.
+
+    Run this under `gen` (and reruns) to get the reported accuracy and its run-to-run variance
+    cheaply: one call per item, not the 10-order position-debiasing set. Not position-probing,
+    so it adds no position-bias samples; it's purely "how good, at the natural position".
+    """
+
+    kind = "natural"
+
+    def present(self, item: MCItem) -> list[Presentation]:
+        return [
+            Presentation(
+                question=item.question,
+                options=tuple(item.options),
+                origin=tuple(range(len(item.options))),
+                kind=self.kind,
+            )
+        ]
+
+
 DEFAULT_INSTRUCTIONS = (
     "Which option is correct? Reply with only the letter ({letters}).",
     "Select the single best answer and respond with just its letter ({letters}).",

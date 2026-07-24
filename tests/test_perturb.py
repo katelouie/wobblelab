@@ -5,6 +5,7 @@ import pytest
 from squishlab import (
     FormalityShift,
     LexicalSwap,
+    NaturalOrder,
     ParaphraseWithModel,
     Perturbation,
     RephraseInstruction,
@@ -47,6 +48,16 @@ def test_reorder_is_position_probing_and_permutes():
         assert p.origin[i] == ITEM.answer_idx  # answer placed at slot i
         assert sorted(p.origin) == [0, 1, 2]  # a real permutation
         assert p.question == ITEM.question  # question untouched
+
+
+def test_natural_order_is_one_identity_presentation_not_position_probing():
+    pres = NaturalOrder().present(ITEM)
+    assert len(pres) == 1
+    p = pres[0]
+    assert p.kind == "natural"
+    assert p.origin == (0, 1, 2)  # identity: answer stays at its dataset slot
+    assert not p.probes_position  # leaderboard number, adds no position-bias samples
+    assert p.question == ITEM.question and p.options == ITEM.options
 
 
 def test_rephrase_instruction_varies_only_the_ask():
