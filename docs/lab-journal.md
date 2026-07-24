@@ -433,12 +433,13 @@ via the *identical* ollama GGUF blob feeding both ollama and llama.cpp). → **F
 A bonus: the `OpenAICompatibleProvider` drove both llama.cpp and mlx `/v1` first try — the same
 adapter that will point at a vLLM pod. `experiments/backends.py` reproduces the bake-off.
 
-## 2026-07-23 — RENAME IN PROGRESS: squishlab → wobblelab (branch `rename-wobblelab`)
+## 2026-07-23 — RENAME DONE: squishlab → wobblelab (merged to `main`, commit `e5f8473`)
 
 Full rename (project + package + metric vocabulary). "wobble" is the more accessible umbrella
-term; the squish/wobble distinction only matters in methodology prose, not the brand.
+term; the squish/wobble distinction only matters in methodology prose, not the brand. Landed as
+one fast-forward commit on `main` (local; not yet pushed — push waits on the GitHub repo rename).
 
-**DONE on branch `rename-wobblelab` (uncommitted):**
+**DONE:**
 - `git mv src/squishlab → src/wobblelab`, `git mv squish.py → wobble.py`.
 - Three-case content replace (`squish→wobble`, `Squish→Wobble`, `SQUISH→WOBBLE`) across 43
   text files (src, tests, experiments, docs, README, pyproject, .github, pitch/). Zero
@@ -450,14 +451,13 @@ term; the squish/wobble distinction only matters in methodology prose, not the b
 - Metric API renamed: `wobble_score`, `wobble_factor`, `wobble_by_kind`, `interventional_wobble`,
   `observational_wobble`, `model_wobble`, "wobble plane".
 
-**REMAINING (immediate, to finish the branch):**
-1. Reinstall: `pip uninstall -y squishlab && pip install -e ".[dev,bench]"` in the pyenv venv
-   (still named `squishlab`; keep using `PYENV_VERSION=squishlab`) so `import wobblelab` resolves.
-2. `ruff format . && ruff check .` then `pytest` — must stay green (60 tests).
-3. Bump `pyproject.toml` version `0.0.1 → 0.1.0`.
-4. Commit on the branch; merge to `main`.
-5. NOTE: result/pitch **PNGs still show "SQUISH" baked into the pixels** (can't sed an image) —
-   regenerate charts later to fix; filenames + JSON already renamed.
+- Reinstalled (`pip uninstall -y squishlab && pip install -e ".[dev,bench]"` in the pyenv venv,
+  still named `squishlab`); `import wobblelab` resolves. `ruff format`/`check` clean, `pytest`
+  green (60). Bumped `pyproject.toml` `0.0.1 → 0.1.0` and refreshed the `description` to the
+  wobble one-liner. Committed on `rename-wobblelab`, fast-forwarded to `main`, deleted the branch.
+
+**STILL OPEN (not blocking):** result/pitch **PNGs still show "SQUISH" baked into the pixels**
+(can't sed an image) — regenerate the charts to fix; filenames + JSON keys are already renamed.
 
 **Kate's account-level TODOs (not code):** claim `wobblelab` on PyPI (it's free; 404 confirmed)
 + configure Trusted Publishing pending-publisher for it; leave/tombstone `squishlab` (published
