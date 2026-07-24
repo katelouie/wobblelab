@@ -99,16 +99,13 @@ Extraction is a regex cascade on the parenthesized answer (`answer is \((.)\)`, 
 down to any `\((.)\)`). Choices are shuffled with a seeded `random.shuffle`, tracking the
 correct index, which is what our loader reproduces.
 
-**So what for WobbleLab — a contrast that bit us.** Our default MC harness (`A. option` +
-"answer with only the letter" + `max_tokens 4`) is a *different paradigm* from how GPQA is
-actually run. On a tiny model that reflexively explains instead of complying, `max_tokens 4`
-never reaches a letter, so gen scoring collapsed to 3.4% (see lab-journal F-026). That collapse
-is a real finding, but it's about our harness diverging from the benchmark's, not about the
-model. Lesson baked into the design going forward: a benchmark's *canonical* harness (prompt
-format, extraction, shots, CoT) is part of the benchmark, and a reliability tool has to be able
-to run it that way and report the gap to any other harness as a first-class wobble number.
-This is the strongest argument for the planned `Benchmark` ABC owning its harness, not just its
-data.
+**So what for WobbleLab.** GPQA is scored as free generation ending in "The correct answer is
+(X)", not a constrained single letter. That is the *canonical operating point* the benchmark's
+number lives at, and it is what our anchor must reproduce. A benchmark's canonical harness
+(prompt format, extraction, shots, CoT, budget) is part of the benchmark, and the tool measures
+the anchor there first, then reports the movement under each knob as a deviation from it. This is
+the argument for `Benchmark` owning its canonical harness, not just its data
+([docs/design/architecture.md](../design/architecture.md)).
 
 ---
 

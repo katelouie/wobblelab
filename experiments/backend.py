@@ -19,6 +19,7 @@ aim the exact same experiment at a rented vLLM pod instead. See `docs/remote-gpu
 from __future__ import annotations
 
 import os
+import re
 
 from wobblelab import OpenAICompatibleProvider
 
@@ -31,6 +32,10 @@ MODEL_LABEL = os.environ.get("WOBBLE_MODEL_LABEL") or os.environ.get(
 BASE_URL = os.environ.get("WOBBLE_BASE_URL", "http://localhost:8080/v1")
 BACKEND_LABEL = os.environ.get("WOBBLE_BACKEND", "llama.cpp --parallel 8")
 API_KEY = os.environ.get("WOBBLE_API_KEY") or None
+
+# Filesystem-safe model tag for result filenames, so runs on different models coexist
+# (e.g. gpqa_diamond_wobble_qwen3-0.6b.png vs ..._qwen2.5-7b-instruct.png).
+MODEL_SLUG = re.sub(r"[^a-z0-9.]+", "-", MODEL_LABEL.lower()).strip("-")
 
 
 def make_provider(

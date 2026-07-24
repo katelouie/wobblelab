@@ -48,7 +48,7 @@ class OpenAICompatibleProvider:
         self.timeout = timeout
         # One pooled session, sized for concurrency (many in-flight requests across threads).
         self._session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(pool_connections=64, pool_maxsize=64)
+        adapter = requests.adapters.HTTPAdapter(pool_connections=128, pool_maxsize=128)
         self._session.mount("http://", adapter)
         self._session.mount("https://", adapter)
 
