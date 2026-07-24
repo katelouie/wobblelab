@@ -2,13 +2,13 @@
 
 The logic must be provable with fake models: an "always A" model has to produce a maximal
 position swing and an A-only chosen distribution; a "knows the answer" model has to score
-100% with zero squish; and variable-option-count items (the TruthfulQA shape) must not crash
+100% with zero wobble; and variable-option-count items (the TruthfulQA shape) must not crash
 the fixed-width assumptions the harness used to make.
 """
 
 import pytest
 
-from squishlab import (
+from wobblelab import (
     MockProvider,
     MultipleChoiceTask,
     RephraseInstruction,
@@ -20,7 +20,7 @@ from squishlab import (
     picks_option_containing,
     score_stability,
 )
-from squishlab.benchmark import MCItem
+from wobblelab.benchmark import MCItem
 
 # Correct option is marked "CORRECT" so picks_option_containing can play a perfect model;
 # distractors are distinct and never contain the needle.
@@ -35,14 +35,14 @@ ITEMS = [
 ]
 
 
-def test_perfect_model_scores_100_with_no_squish():
+def test_perfect_model_scores_100_with_no_wobble():
     perfect = MockProvider(picks_option_containing("CORRECT"), name="perfect")
     r = evaluate(perfect, ITEMS, scoring="ll", benchmark="toy")
     assert r.accuracy == pytest.approx(1.0)
-    assert r.interventional_squish == pytest.approx(
+    assert r.interventional_wobble == pytest.approx(
         0.0
     )  # same content under every shuffle
-    assert r.observational_squish == pytest.approx(0.0)  # deterministic
+    assert r.observational_wobble == pytest.approx(0.0)  # deterministic
     assert r.position_swing == pytest.approx(0.0)  # right at every slot -> flat
     assert all(c == pytest.approx(0.25) for c in r.chosen_distribution)
 
@@ -63,7 +63,7 @@ def test_gen_and_ll_agree_for_a_deterministic_mock():
     ll = evaluate(biased, ITEMS, scoring="ll", benchmark="toy")
     assert g.accuracy == pytest.approx(ll.accuracy)
     assert g.n_rerun == 3 and ll.n_rerun == 1  # ll collapses reruns
-    assert g.observational_squish == pytest.approx(
+    assert g.observational_wobble == pytest.approx(
         0.0
     )  # mock is deterministic across seeds
 
@@ -103,7 +103,7 @@ def test_variable_option_counts_do_not_crash():
     assert r.accuracy == pytest.approx(
         1.0
     )  # perfect model still perfect regardless of width
-    assert r.interventional_squish == pytest.approx(0.0)
+    assert r.interventional_wobble == pytest.approx(0.0)
     assert len(r.accuracy_by_position) == 5  # widened to the largest item
     # A slot that only the 5-option item reaches (E) is still counted, not dropped.
     assert r.accuracy_by_position[4] == pytest.approx(1.0)
@@ -152,7 +152,7 @@ def test_evaluate_rejects_bad_scoring_and_empty():
         evaluate(MockProvider(always_position(0)), [], scoring="ll")
 
 
-# --- Pillar 2: per-kind squish (a model solid under reorder but fragile under rephrasing) ---
+# --- Pillar 2: per-kind wobble (a model solid under reorder but fragile under rephrasing) ---
 
 # Answer is NOT at slot 0, so "always A" under the rephrased instruction lands on a wrong
 # option and flips content; under the default (reorder) instruction the model finds CORRECT.
@@ -173,23 +173,23 @@ def _fragile_under_rephrase(prompt, seed):
     return 0  # any reworded instruction -> blindly answer "A"
 
 
-def test_squish_is_broken_out_by_perturbation_kind():
+def test_wobble_is_broken_out_by_perturbation_kind():
     task = MultipleChoiceTask(
         "ll", perturbations=[ReorderOptions(), RephraseInstruction()]
     )
     r = evaluate(MockProvider(_fragile_under_rephrase), KIND_ITEMS, task=task)
-    assert set(r.squish_by_kind) == {"reorder", "rephrase"}
-    assert r.squish_by_kind["reorder"] == pytest.approx(0.0)  # steady under reordering
-    assert r.squish_by_kind["rephrase"] == pytest.approx(
+    assert set(r.wobble_by_kind) == {"reorder", "rephrase"}
+    assert r.wobble_by_kind["reorder"] == pytest.approx(0.0)  # steady under reordering
+    assert r.wobble_by_kind["rephrase"] == pytest.approx(
         1.0
     )  # flips every time on reword
     # the report surfaces the split
-    assert "squish by perturbation kind" in r.to_markdown()
+    assert "wobble by perturbation kind" in r.to_markdown()
 
 
 def test_default_task_reports_single_reorder_kind():
     r = evaluate(MockProvider(picks_option_containing("CORRECT")), ITEMS, scoring="ll")
-    assert set(r.squish_by_kind) == {"reorder"}
+    assert set(r.wobble_by_kind) == {"reorder"}
 
 
 def test_concurrency_produces_identical_results():

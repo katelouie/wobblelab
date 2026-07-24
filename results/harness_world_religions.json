@@ -89,7 +89,7 @@
       "debiased_acc": 0.475
     }
   },
-  "harness_squish": 0.2,
+  "harness_wobble": 0.2,
   "scoring_effect": 0.083,
   "shot_effect": -0.117,
   "seconds": 579.5

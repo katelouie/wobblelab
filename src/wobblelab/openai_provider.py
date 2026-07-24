@@ -1,4 +1,4 @@
-"""OpenAI-compatible provider: point squishlab at any `/v1` endpoint.
+"""OpenAI-compatible provider: point wobblelab at any `/v1` endpoint.
 
 vLLM, llama.cpp's `llama-server`, mlx-lm's server, ollama's `/v1`, or a hosted API all speak
 the OpenAI chat-completions protocol, so *one* provider reaches all of them. Combined with
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import requests
 
-from squishlab.benchmark import LETTERS
+from wobblelab.benchmark import LETTERS
 
 DEFAULT_URL = "http://localhost:8000/v1"
 

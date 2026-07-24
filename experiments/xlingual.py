@@ -2,13 +2,13 @@
 
 Symmetric. For each prompt, run the English and Chinese forms N times each and measure
 cross-lingual disagreement |p_yes(EN) - p_yes(ZH)| with a Newcombe CI. On the
-culturally-INVARIANT facts this is pure squish -- language cannot change whether 7 is
+culturally-INVARIANT facts this is pure wobble -- language cannot change whether 7 is
 prime -- so those are the clean signal. The two cultural items (one Western, one
 Chinese) are confounded by framing and included for balance and a bias look, not clean
 measurement. The decidability labels also give per-language accuracy, so we can catch a
 cross-lingual knowledge gap (right in one language, wrong in the other).
 
-Controlled, portable config (squishlab.client.CONTROLLED), explicit seeds.
+Controlled, portable config (wobblelab.client.CONTROLLED), explicit seeds.
 Run:  python experiments/xlingual.py
 """
 
@@ -25,7 +25,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import OllamaClient, newcombe_diff_ci, wilson_ci  # noqa: E402
+from wobblelab import OllamaClient, newcombe_diff_ci, wilson_ci  # noqa: E402
 
 MODEL = "qwen3.5:0.8b"
 QUANT = "Q8_0"
@@ -146,7 +146,7 @@ def measure(name: str, spec: dict) -> dict:
 
 
 def plot(rows, path: Path) -> None:
-    order = sorted(rows, key=lambda r: r["disagreement"])  # squishiest at top
+    order = sorted(rows, key=lambda r: r["disagreement"])  # wobbleiest at top
     n = len(order)
     plt.rcParams["font.family"] = "DejaVu Sans"
     fig, ax = plt.subplots(figsize=(9.2, 0.66 * n + 1.9), dpi=150)

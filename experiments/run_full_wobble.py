@@ -1,7 +1,7 @@
 """Full-corpus wobble on MMLU-Pro via parallelized llama.cpp: both pillars, one artifact.
 
 Pass 1 (reorder, ll): position-debiased accuracy + a tight CI + position bias across all 10
-slots + reorder squish -- Pillar 2, and how it propagates into the overall number.
+slots + reorder wobble -- Pillar 2, and how it propagates into the overall number.
 Pass 2 (natural order, gen, 5 runs): the leaderboard-style accuracy and its run-to-run
 variance -- Pillar 1, the full-corpus *tightened* wobble (the 24-item 20-pt spread should
 collapse to ~a point at 12k).
@@ -25,14 +25,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import (  # noqa: E402
+from wobblelab import (  # noqa: E402
     MultipleChoiceTask,
     NaturalOrder,
     OpenAICompatibleProvider,
     evaluate,
     score_stability,
 )
-from squishlab.benchmark import LETTERS  # noqa: E402
+from wobblelab.benchmark import LETTERS  # noqa: E402
 
 SUBJECT = "MMLU-Pro"
 N_ITEMS = None  # full corpus
@@ -43,7 +43,7 @@ CONCURRENCY = 8
 def load_mmlu_pro(n):
     from datasets import load_dataset
 
-    from squishlab.benchmark import MCItem
+    from wobblelab.benchmark import MCItem
 
     ds = load_dataset("TIGER-Lab/MMLU-Pro", split="test")
     n = n or len(ds)
@@ -121,7 +121,7 @@ def plot(report, stab, path):
     )
 
     fig.suptitle(
-        f"SquishLab · full {SUBJECT} · qwen3:0.6b (llama.cpp)",
+        f"WobbleLab · full {SUBJECT} · qwen3:0.6b (llama.cpp)",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",
@@ -151,7 +151,7 @@ def main():
         f"  debiased accuracy {report.accuracy:.3f}  CI[{report.accuracy_ci[0]:.3f},{report.accuracy_ci[1]:.3f}]"
     )
     print(
-        f"  reorder squish {report.squish_by_kind['reorder']:.3f}  position swing {report.position_swing:.3f}"
+        f"  reorder wobble {report.wobble_by_kind['reorder']:.3f}  position swing {report.position_swing:.3f}"
     )
 
     # Pass 2: natural-order multi-run gen (Pillar 1 · tightened wobble)
@@ -175,7 +175,7 @@ def main():
         f"  debiased    (reorder, ll):   {report.accuracy:.1%}  [{report.accuracy_ci[0]:.1%},{report.accuracy_ci[1]:.1%}]"
     )
     print(
-        f"  hidden by the single number: {report.position_swing:.0%} position swing, {report.squish_by_kind['reorder']:.0%} reorder flip"
+        f"  hidden by the single number: {report.position_swing:.0%} position swing, {report.wobble_by_kind['reorder']:.0%} reorder flip"
     )
 
     results = Path(__file__).resolve().parent.parent / "results"

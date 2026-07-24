@@ -2,7 +2,7 @@
 
 import pytest
 
-from squishlab import (
+from wobblelab import (
     FormalityShift,
     LexicalSwap,
     NaturalOrder,
@@ -12,8 +12,8 @@ from squishlab import (
     ReorderOptions,
     TranslateWithModel,
 )
-from squishlab.benchmark import MCItem
-from squishlab.perturb import render
+from wobblelab.benchmark import MCItem
+from wobblelab.perturb import render
 
 ITEM = MCItem(
     id="t",

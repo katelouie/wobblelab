@@ -1,6 +1,6 @@
-"""squishlab -- measuring how much LLM answers move under things that shouldn't matter."""
+"""wobblelab -- measuring how much LLM answers move under things that shouldn't matter."""
 
-from squishlab.cards import (
+from wobblelab.cards import (
     JSONRenderer,
     Panel,
     ReliabilityCard,
@@ -8,15 +8,15 @@ from squishlab.cards import (
     benchmark_card,
     production_card,
 )
-from squishlab.client import CONTROLLED, OllamaClient
-from squishlab.openai_provider import OpenAICompatibleProvider
-from squishlab.provider import (
+from wobblelab.client import CONTROLLED, OllamaClient
+from wobblelab.openai_provider import OpenAICompatibleProvider
+from wobblelab.provider import (
     MockProvider,
     Provider,
     always_position,
     picks_option_containing,
 )
-from squishlab.perturb import (
+from wobblelab.perturb import (
     FormalityShift,
     LexicalSwap,
     ParaphraseWithModel,
@@ -27,16 +27,16 @@ from squishlab.perturb import (
     ReorderOptions,
     TranslateWithModel,
 )
-from squishlab.report import (
+from wobblelab.report import (
     ModelReport,
     compare,
     compare_markdown,
     evaluate,
     score_stability,
 )
-from squishlab.squish import model_squish, squish_factor, squish_score
-from squishlab.task import MultipleChoiceTask, Outcome, Task
-from squishlab.stats import (
+from wobblelab.wobble import model_wobble, wobble_factor, wobble_score
+from wobblelab.task import MultipleChoiceTask, Outcome, Task
+from wobblelab.stats import (
     bootstrap_ci,
     confident_shift,
     newcombe_diff_ci,
@@ -74,9 +74,9 @@ __all__ = [
     "newcombe_diff_ci",
     "confident_shift",
     "bootstrap_ci",
-    "squish_score",
-    "squish_factor",
-    "model_squish",
+    "wobble_score",
+    "wobble_factor",
+    "model_wobble",
     "ReliabilityCard",
     "Panel",
     "benchmark_card",

@@ -1,10 +1,10 @@
-"""Harness squish: how far a benchmark *number* moves when you change the eval harness.
+"""Harness wobble: how far a benchmark *number* moves when you change the eval harness.
 
 The official MMLU number for this model was produced one specific way -- log-likelihood
 scoring (argmax over the model's P("A")/P("B")/... at the first token) with few-shot
 exemplars. Our F-017 number was produced another way -- sample a letter, regex it back,
 zero-shot. Neither choice changes what the model *knows*; both change the number it
-reports. That difference is harness squish, and here we quantify it by holding the item
+reports. That difference is harness wobble, and here we quantify it by holding the item
 set fixed and sweeping two harness axes:
 
   scoring:  gen  (sample + parse a letter -- our path, exposed to output-side bias)
@@ -12,7 +12,7 @@ set fixed and sweeping two harness axes:
   shots:    0-shot   vs   5-shot (exemplars from MMLU's purpose-built `dev` split)
 
 That's a 2x2 grid of accuracy on identical items. The spread across cells is the harness
-squish on the reported number; the main effects decompose it into scoring vs shots. A
+wobble on the reported number; the main effects decompose it into scoring vs shots. A
 secondary panel asks whether ll scoring cures the 48-point position bias gen showed
 (F-017) -- run at 0-shot, where we can compare directly to the benchmark run.
 
@@ -32,8 +32,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import OllamaClient, bootstrap_ci  # noqa: E402
-from squishlab.benchmark import (  # noqa: E402
+from wobblelab import OllamaClient, bootstrap_ci  # noqa: E402
+from wobblelab.benchmark import (  # noqa: E402
     LETTERS,
     MCItem,
     format_prompt,
@@ -184,7 +184,7 @@ def plot(grid, profiles, path: Path) -> None:
     ax1.set_ylim(0, 0.75)
     ax1.set_ylabel("natural-position accuracy", color="#c9b79e")
     ax1.set_title(
-        "harness squish: same items, four harnesses", color="#f6e8ce", fontsize=11
+        "harness wobble: same items, four harnesses", color="#f6e8ce", fontsize=11
     )
     ax1.legend(
         facecolor="#181b23", edgecolor="#3a3f4b", labelcolor="#e7dcc8", fontsize=7.5
@@ -221,7 +221,7 @@ def plot(grid, profiles, path: Path) -> None:
     )
 
     fig.suptitle(
-        f"HARNESS SQUISH · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
+        f"HARNESS WOBBLE · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",
@@ -271,7 +271,7 @@ def main() -> None:
             "debiased_acc": round(sum(acc_by_pos) / len(acc_by_pos), 3),
         }
 
-    # decompose the harness squish into main effects on the reported (natural) number
+    # decompose the harness wobble into main effects on the reported (natural) number
     order = [("gen", "0shot"), ("ll", "0shot"), ("gen", "5shot"), ("ll", "5shot")]
     accs = {c: grid[c]["acc"] for c in order}
     mean = lambda cs: sum(accs[c] for c in cs) / len(cs)  # noqa: E731
@@ -281,11 +281,11 @@ def main() -> None:
     shot_effect = mean([c for c in order if c[1] == "5shot"]) - mean(
         [c for c in order if c[1] == "0shot"]
     )
-    harness_squish = max(accs.values()) - min(accs.values())
+    harness_wobble = max(accs.values()) - min(accs.values())
 
-    print(f"\nHARNESS SQUISH · MMLU:{SUBJECT} · {MODEL} ({QUANT}) · {len(items)} items")
+    print(f"\nHARNESS WOBBLE · MMLU:{SUBJECT} · {MODEL} ({QUANT}) · {len(items)} items")
     print(
-        f"  spread across the four harnesses: {harness_squish:.3f}  ({min(accs.values()):.3f} -> {max(accs.values()):.3f})"
+        f"  spread across the four harnesses: {harness_wobble:.3f}  ({min(accs.values()):.3f} -> {max(accs.values()):.3f})"
     )
     print(f"  main effect  scoring (ll - gen): {scoring_effect:+.3f}")
     print(f"  main effect  shots  (5 - 0):     {shot_effect:+.3f}")
@@ -311,7 +311,7 @@ def main() -> None:
         "official_mmlu_redux": OFFICIAL_MMLU_REDUX,
         "grid": {f"{s}_{sh}": grid[(s, sh)] for s, sh in order},
         "profiles_0shot": profiles,
-        "harness_squish": round(harness_squish, 3),
+        "harness_wobble": round(harness_wobble, 3),
         "scoring_effect": round(scoring_effect, 3),
         "shot_effect": round(shot_effect, 3),
         "seconds": round(time.time() - t0, 1),

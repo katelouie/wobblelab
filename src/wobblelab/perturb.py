@@ -3,7 +3,7 @@
 Pillar 2, in full. A benchmark item can be presented many equivalent ways, options
 reordered, the instruction reworded, the question paraphrased, the whole thing translated,
 and a model's answer should not care which. How much it *does* care, broken out PER KIND of
-change, is the squish we report. That per-kind breakdown is the point: "this model is solid
+change, is the wobble we report. That per-kind breakdown is the point: "this model is solid
 under reordering but flips 30% of the time when you reword the question" is the reliability
 fact a leaderboard never tells you.
 
@@ -24,8 +24,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from squishlab.benchmark import LETTERS, MCItem, orders_correct_at_each_position
-from squishlab.provider import Provider
+from wobblelab.benchmark import LETTERS, MCItem, orders_correct_at_each_position
+from wobblelab.provider import Provider
 
 
 @dataclass(frozen=True)
@@ -220,7 +220,7 @@ class TranslateWithModel:
 
     Pillar 2's "translation" axis. Same meaning-drift caveat as paraphrase, plus culture-
     boundedness for culturally-loaded items (a category can genuinely differ across languages,
-    which is a finding, not squish). One perturber call per text.
+    which is a finding, not wobble). One perturber call per text.
     """
 
     def __init__(self, perturber: Provider, language: str) -> None:

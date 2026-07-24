@@ -14,7 +14,7 @@ import html
 import json
 from typing import Protocol, runtime_checkable
 
-from squishlab.cards.model import Panel, ReliabilityCard
+from wobblelab.cards.model import Panel, ReliabilityCard
 
 
 @runtime_checkable
@@ -95,7 +95,7 @@ class SVGCardRenderer:
         return (
             f'<svg viewBox="0 0 {self.w} {total:.0f}" xmlns="http://www.w3.org/2000/svg" '
             f'role="img" style="width:100%;height:auto;font-family:{SANS}">'
-            f"<title>SquishLab {html.escape(card.lens)} reliability card</title>"
+            f"<title>WobbleLab {html.escape(card.lens)} reliability card</title>"
             f'<rect x="0" y="0" width="{self.w}" height="{total:.0f}" rx="8" '
             f'fill="{self.t["bg"]}" stroke="{self.t["hair"]}" stroke-width="0.5"/>'
             f"{head}{''.join(parts)}{foot}</svg>"
@@ -109,7 +109,7 @@ class SVGCardRenderer:
         subj = card.subject
         ctx = " · ".join(str(v) for v in (subj.get("context"), _items_line(subj)) if v)
         gx = self.w - 160
-        sf = card.squish_factor
+        sf = card.wobble_factor
         fill_w = round(136 * float(sf.get("factor", 0)))
         return (
             self._rect(24, 16, badge_w, 40, self.t[f"{sev}_bg"], rx=20)
@@ -132,7 +132,7 @@ class SVGCardRenderer:
                 "600",
             )
             + self._text(40 + badge_w, 52, ctx, 11, self.t["muted"])
-            + self._text(gx, 28, "SQUISH FACTOR", 10, self.t["muted"], "500")
+            + self._text(gx, 28, "WOBBLE FACTOR", 10, self.t["muted"], "500")
             + self._rect(gx, 36, 136, 8, self.t["hair"], rx=4)
             + self._rect(gx, 36, fill_w, 8, self.t["accent"], rx=4)
             + self._text(

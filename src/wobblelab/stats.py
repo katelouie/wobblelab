@@ -1,4 +1,4 @@
-"""Confidence-interval primitives for squishlab.
+"""Confidence-interval primitives for wobblelab.
 
 Small, dependency-light, and tested, because a framework that measures reliability
 should not itself report point estimates without error bars. See lab-journal D-005.
@@ -75,7 +75,7 @@ def bootstrap_ci(
     Resamples ``data`` WITH REPLACEMENT ``n_boot`` times and recomputes ``statistic``.
     NOTE: this cannot invent statistical power you did not sample -- for a plain
     proportion it merely reproduces ``wilson_ci``. Its real use is *derived/composite*
-    statistics with no clean closed form (the squish score, the model-level headline
+    statistics with no clean closed form (the wobble score, the model-level headline
     over prompts, benchmark accuracy across orderings), where you resample the recorded
     outcomes at zero additional model cost. See lab-journal D-008.
     """

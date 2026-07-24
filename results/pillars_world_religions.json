@@ -10,9 +10,9 @@
       0.365,
       0.615
     ],
-    "interventional_squish": 0.219,
-    "observational_squish": 0.0,
-    "squish_by_kind": {
+    "interventional_wobble": 0.219,
+    "observational_wobble": 0.0,
+    "wobble_by_kind": {
       "reorder": 0.365,
       "paraphrase": 0.028,
       "translate:Chinese": 0.208

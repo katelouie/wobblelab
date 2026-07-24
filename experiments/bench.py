@@ -1,15 +1,15 @@
-"""Benchmark squish on MMLU: accuracy WITH a CI, plus an option-reordering squish.
+"""Benchmark wobble on MMLU: accuracy WITH a CI, plus an option-reordering wobble.
 
 For each item we place the correct answer at *every* option position (distractors keep
 their relative order) and rerun each. That yields:
   - a position-DEBIASED accuracy, with a CI bootstrapped over items (the correct unit --
     reruns of one item are correlated, so a naive Wilson over trials would lie);
   - accuracy broken out by answer position -> the position-bias impact on the score;
-  - option-reorder interventional squish (does the chosen answer's CONTENT change as we
-    shuffle the options?) -- guaranteed meaning-preserving, so pure squish;
+  - option-reorder interventional wobble (does the chosen answer's CONTENT change as we
+    shuffle the options?) -- guaranteed meaning-preserving, so pure wobble;
   - the raw chosen-letter distribution.
 
-Controlled config, seeded, reuses squishlab.stats. Run: python experiments/bench.py
+Controlled config, seeded, reuses wobblelab.stats. Run: python experiments/bench.py
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import OllamaClient, bootstrap_ci, wilson_ci  # noqa: E402
-from squishlab.benchmark import (  # noqa: E402
+from wobblelab import OllamaClient, bootstrap_ci, wilson_ci  # noqa: E402
+from wobblelab.benchmark import (  # noqa: E402
     LETTERS,
     MCItem,
     format_prompt,
@@ -100,7 +100,7 @@ def measure(item: MCItem):
             "accuracy": round(correct_hits / total, 3),
             "interventional": interventional,
             "observational": observational,
-            "squish": round(max(interventional, observational), 3),
+            "wobble": round(max(interventional, observational), 3),
         },
         pos_correct,
         chosen_letter,
@@ -147,7 +147,7 @@ def plot(acc_by_pos, acc_mean, acc_ci, chosen_dist, path: Path) -> None:
         facecolor="#181b23", edgecolor="#3a3f4b", labelcolor="#e7dcc8", fontsize=8
     )
     fig.suptitle(
-        f"BENCHMARK SQUISH · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
+        f"BENCHMARK WOBBLE · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",
@@ -187,11 +187,11 @@ def main() -> None:
     interv = [r["interventional"] for r in rows]
     interv_mean = sum(interv) / len(interv)
     interv_ci = bootstrap_ci(interv, lambda s: sum(s) / len(s), n_boot=4000, seed=2)
-    squish_mean = sum(r["squish"] for r in rows) / len(rows)
-    worst = sorted(rows, key=lambda r: r["squish"], reverse=True)[:5]
+    wobble_mean = sum(r["wobble"] for r in rows) / len(rows)
+    worst = sorted(rows, key=lambda r: r["wobble"], reverse=True)[:5]
 
     print(
-        f"BENCHMARK SQUISH · MMLU:{SUBJECT} · {MODEL} ({QUANT}) · {len(items)} items × {k} orders × {N_RERUN}"
+        f"BENCHMARK WOBBLE · MMLU:{SUBJECT} · {MODEL} ({QUANT}) · {len(items)} items × {k} orders × {N_RERUN}"
     )
     print(
         f"accuracy (debiased): {acc_mean:.3f}  bootstrap95 [{acc_ci[0]:.3f},{acc_ci[1]:.3f}]"
@@ -205,12 +205,12 @@ def main() -> None:
         f"chosen-letter distribution: {[round(c, 2) for c in chosen_dist]}  (unbiased = {1 / k:.2f})"
     )
     print(
-        f"reorder squish (interventional): {interv_mean:.3f} [{interv_ci[0]:.3f},{interv_ci[1]:.3f}]"
-        f"   · mean item squish {squish_mean:.3f}"
+        f"reorder wobble (interventional): {interv_mean:.3f} [{interv_ci[0]:.3f},{interv_ci[1]:.3f}]"
+        f"   · mean item wobble {wobble_mean:.3f}"
     )
     print(
         "worst items:",
-        ", ".join(f"{w['id'].split(':')[-1]}({w['squish']})" for w in worst),
+        ", ".join(f"{w['id'].split(':')[-1]}({w['wobble']})" for w in worst),
     )
 
     results_dir = Path(__file__).resolve().parent.parent / "results"
@@ -230,9 +230,9 @@ def main() -> None:
         "accuracy_ci_bootstrap": [round(x, 3) for x in acc_ci],
         "accuracy_by_position": [round(a, 3) for a in acc_by_pos],
         "chosen_letter_dist": [round(c, 3) for c in chosen_dist],
-        "reorder_squish": round(interv_mean, 3),
-        "reorder_squish_ci": [round(x, 3) for x in interv_ci],
-        "mean_item_squish": round(squish_mean, 3),
+        "reorder_wobble": round(interv_mean, 3),
+        "reorder_wobble_ci": [round(x, 3) for x in interv_ci],
+        "mean_item_wobble": round(wobble_mean, 3),
         "seconds": round(time.time() - t0, 1),
         "items": rows,
     }

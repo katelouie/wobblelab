@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "squishlab"
-version = "0.0.1"
-description = "LLM determinism framework."
+name = "wobblelab"
+version = "0.1.0"
+description = "Measuring wobble: how much a model's answer moves under things that shouldn't move it."
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Kate Louie", email = "katehlouie@gmail.com" }]

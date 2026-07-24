@@ -1,6 +1,6 @@
 """Tests for the option-permutation machinery — the round-trip must be exact."""
 
-from squishlab.benchmark import (
+from wobblelab.benchmark import (
     MCItem,
     format_prompt,
     modal,

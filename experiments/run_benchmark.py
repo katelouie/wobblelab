@@ -1,4 +1,4 @@
-"""Point squishlab at a named benchmark: one call, one report. The generalized surface,
+"""Point wobblelab at a named benchmark: one call, one report. The generalized surface,
 dogfooded -- MMLU and TruthfulQA flow through the SAME code despite different option counts.
 
     python experiments/run_benchmark.py                      # TruthfulQA MC1 (variable widths)
@@ -14,8 +14,8 @@ import argparse
 import json
 from pathlib import Path
 
-from squishlab import OllamaClient, evaluate
-from squishlab.loaders import load_mmlu, load_truthfulqa_mc1
+from wobblelab import OllamaClient, evaluate
+from wobblelab.loaders import load_mmlu, load_truthfulqa_mc1
 
 MODEL = "qwen3.5:0.8b"
 

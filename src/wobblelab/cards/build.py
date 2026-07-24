@@ -2,8 +2,8 @@
 
 `benchmark_card(report, stability)` is the fully-wired one -- hand it a `ModelReport` (and
 optionally a `score_stability` result) and it computes the panels, the plain-English
-verdicts, the per-panel severity, and the headline squish factor. `production_card(...)`
-takes the production-lens measurements (perturbation sensitivity, cross-lingual, squish
+verdicts, the per-panel severity, and the headline wobble factor. `production_card(...)`
+takes the production-lens measurements (perturbation sensitivity, cross-lingual, wobble
 plane, config) since those come from separate probes, and assembles them the same way.
 
 All the interpretation ("BENCHMARK UNRELIABLE", "position preference, not knowledge") lives
@@ -12,9 +12,9 @@ here, once, so a renderer never has to interpret data and every format tells the
 
 from __future__ import annotations
 
-from squishlab.benchmark import LETTERS
-from squishlab.cards.model import Panel, ReliabilityCard
-from squishlab.squish import squish_factor
+from wobblelab.benchmark import LETTERS
+from wobblelab.cards.model import Panel, ReliabilityCard
+from wobblelab.wobble import wobble_factor
 
 _BAND_SEVERITY = {"high": "bad", "moderate": "caution", "low": "good"}
 
@@ -78,7 +78,7 @@ def benchmark_card(report, stability: dict | None = None) -> ReliabilityCard:
                     f"benchmark could differ by {round(spread * 100)} points."
                 ),
                 severity=_sev(spread, 0.05, 0.15),
-                squish_signal=spread,
+                wobble_signal=spread,
             )
         )
 
@@ -106,12 +106,12 @@ def benchmark_card(report, stability: dict | None = None) -> ReliabilityCard:
                     "position preference, not knowledge."
                 ),
                 severity=_sev(swing, 0.15, 0.4),
-                squish_signal=swing,
+                wobble_signal=swing,
             )
         )
 
     # Option-order sensitivity (reorder flip rate)
-    reorder = report.squish_by_kind.get("reorder", report.interventional_squish)
+    reorder = report.wobble_by_kind.get("reorder", report.interventional_wobble)
     signals["reorder"] = reorder
     panels.append(
         Panel(
@@ -122,17 +122,17 @@ def benchmark_card(report, stability: dict | None = None) -> ReliabilityCard:
                 "caption": "of answers flip when options are reordered",
             },
             severity=_sev(reorder, 0.15, 0.3),
-            squish_signal=reorder,
+            wobble_signal=reorder,
         )
     )
 
-    factor = squish_factor(**signals)
+    factor = wobble_factor(**signals)
     return ReliabilityCard(
         subject=_subject(report),
         lens="benchmark",
         verdict=_verdict_badge("benchmark", factor["band"]),
         severity=_BAND_SEVERITY[factor["band"]],
-        squish_factor=factor,
+        wobble_factor=factor,
         panels=panels,
         provenance=_provenance(report),
     )
@@ -143,7 +143,7 @@ def production_card(
     *,
     perturbation: list[dict] | None = None,
     cross_lingual: list[dict] | None = None,
-    squish_plane: list[dict] | None = None,
+    wobble_plane: list[dict] | None = None,
     config_ab: dict | None = None,
 ) -> ReliabilityCard:
     """Assemble the Production Robustness card ("will it behave for real users?").
@@ -151,7 +151,7 @@ def production_card(
     Inputs are the production-lens measurements, already computed:
       - perturbation: [{name, value, example}, ...]  (value = avg shift / flip rate, 0-1)
       - cross_lingual: [{name, a, b, delta}, ...]     (per-probe language drift)
-      - squish_plane: [{name, dispersion, margin, quadrant}, ...]
+      - wobble_plane: [{name, dispersion, margin, quadrant}, ...]
       - config_ab: {sensitive: [names], n_agree, n_total, arms: [a, b]}
     """
     panels: list[Panel] = []
@@ -166,7 +166,7 @@ def production_card(
                 title="Prompt perturbation — same question, different wording",
                 data={"kinds": perturbation, "unit": "avg shift in p(yes)"},
                 severity=_sev(worst, 0.15, 0.3),
-                squish_signal=worst,
+                wobble_signal=worst,
             )
         )
 
@@ -194,17 +194,17 @@ def production_card(
                     "drift between languages. Multilingual deployment needs per-language validation."
                 ),
                 severity=_sev(worst, 0.15, 0.3),
-                squish_signal=worst,
+                wobble_signal=worst,
             )
         )
 
-    if squish_plane:
-        knife = [p["name"] for p in squish_plane if p.get("quadrant") == "KNIFE-EDGE"]
+    if wobble_plane:
+        knife = [p["name"] for p in wobble_plane if p.get("quadrant") == "KNIFE-EDGE"]
         panels.append(
             Panel(
-                kind="squish_plane",
-                title="Squish plane — reliability shape per question",
-                data={"points": squish_plane},
+                kind="wobble_plane",
+                title="Wobble plane — reliability shape per question",
+                data={"points": wobble_plane},
                 verdict=(
                     f"Knife-edge probes (solid on rerun, flip on reword): {', '.join(knife)}."
                     if knife
@@ -234,13 +234,13 @@ def production_card(
             )
         )
 
-    factor = squish_factor(**signals)
+    factor = wobble_factor(**signals)
     return ReliabilityCard(
         subject=subject,
         lens="production",
         verdict=_verdict_badge("production", factor["band"]),
         severity=_BAND_SEVERITY[factor["band"]],
-        squish_factor=factor,
+        wobble_factor=factor,
         panels=panels,
         provenance=subject.get(
             "provenance", {"recorded": ["model", "config", "seeds"], "complete": True}

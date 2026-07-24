@@ -2,7 +2,7 @@
 
 import pytest
 
-from squishlab.stats import (
+from wobblelab.stats import (
     bootstrap_ci,
     confident_shift,
     newcombe_diff_ci,

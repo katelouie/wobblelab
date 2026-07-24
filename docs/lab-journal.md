@@ -1,11 +1,11 @@
-# SquishLab — Lab Journal
+# WobbleLab — Lab Journal
 
-The decision + discovery record for squishlab. Every methodological fork, why it
+The decision + discovery record for wobblelab. Every methodological fork, why it
 went the way it did, and what the data taught us. Append-only, newest context at
 the bottom of each section. When a decision is later overturned, don't delete it —
 add a superseding entry so the reasoning trail survives.
 
-**squishlab measures *squish*: how much a model's answer moves under things that
+**wobblelab measures *wobble*: how much a model's answer moves under things that
 should not change it.** Two lenses, which turn out to be two axes:
 
 - **observational** — rerun the *same* prompt; how much does the answer disperse? (sampling noise)
@@ -17,15 +17,15 @@ should not change it.** Two lenses, which turn out to be two axes:
 
 | # | Decision | One-line rationale |
 |---|---|---|
-| **D-001** | The squish *plane*: dispersion (y) × margin (x), four quadrants (SOLID / KNIFE-EDGE / NOISY-BUT-SURE / COIN-FLIP) | The two lenses are orthogonal; one axis can't tell a solid answer from a knife-edge (see F-001) |
-| **D-002** | Model = `qwen3.5:0.8b` at **Q8_0** (8-bit), `think:false` | Quantization is itself a squish source, so 8-bit not 4-bit; no-think avoids reasoning-trace variance polluting the measurement |
-| **D-003** | **Controlled, portable sampling config** (pure temperature sampling from the full softmax, explicit per-call seeds) — NOT ollama's Modelfile defaults | Implicit harness defaults are a config-level squish source; "as it ships" measures *ollama's packaging*, not the model, and won't reproduce on vLLM/llama.cpp |
+| **D-001** | The wobble *plane*: dispersion (y) × margin (x), four quadrants (SOLID / KNIFE-EDGE / NOISY-BUT-SURE / COIN-FLIP) | The two lenses are orthogonal; one axis can't tell a solid answer from a knife-edge (see F-001) |
+| **D-002** | Model = `qwen3.5:0.8b` at **Q8_0** (8-bit), `think:false` | Quantization is itself a wobble source, so 8-bit not 4-bit; no-think avoids reasoning-trace variance polluting the measurement |
+| **D-003** | **Controlled, portable sampling config** (pure temperature sampling from the full softmax, explicit per-call seeds) — NOT ollama's Modelfile defaults | Implicit harness defaults are a config-level wobble source; "as it ships" measures *ollama's packaging*, not the model, and won't reproduce on vLLM/llama.cpp |
 | **D-004** | Interventional margin is **continuous shift-based**; plane default = **worst-case (`margin_max`)** within a prompt; model headline = **central tendency** across prompts; always compute `max`/`mean`/`max_ci`; not a user knob | A knife-edge is *defined* by the existence of a breaking rephrase → worst-case within-prompt; different aggregation levels want different stats (see 2026-07-20 entry) |
 | **D-005** | Everything carries CIs (Wilson on rates, Newcombe on shifts). Point for placement, CI for honesty; **CI straddling a threshold → `unresolved`**, not forced into a quadrant. Both axes identical. | A reliability tool must not report point estimates without error bars; N=30 thresholds were slicing sampling noise (F-004) |
 | **D-006** | **Typed paraphrase taxonomy** (casual / formal / hedge / reorder / lexical), constant K per battery | Makes the hot-spot diagnostic (*which kind* of change broke it) and keeps worst-case margins comparable |
-| **D-007** | **Squish score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional squish; rerun-variation is squish only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
-| **D-008** | **Bootstrap is for CIs on *derived/composite* statistics, not a substitute for reruns.** Use it for the squish score, the model-level headline (resample prompts), and benchmark accuracy (resample items — the correct unit, since reruns of one item are correlated). It is NOT a shortcut around actual sampling: resampling can't invent power, and for a plain proportion it just reproduces Wilson. The real way to spend fewer *calls* is adaptive/sequential sampling, not bootstrap. | Kate asked whether we could "bootstrap into" reruns; the honest answer is no for base rates, yes for composites — where there's no clean closed form and resampling recorded outcomes is free. |
-| **D-009** | **Harness squish = sweep the eval harness on fixed items.** Two axes: scoring (`gen` = sample+parse a letter vs `ll` = argmax over first-token letter logprobs, the official method) × shots (0 vs 5, exemplars from MMLU's `dev` split). Metric = **natural-position accuracy** (the leaderboard number), CI bootstrapped over items; spread across the 2×2 = harness squish, main effects decompose it. `ll` via ollama native `/api/chat` `logprobs:true, top_logprobs:20`. | F-019 argued official-vs-ours is "not directly comparable"; this turns that argument into a *quantified decomposition* — how many points are scoring vs shots vs everything-else — instead of a hand-wave. Same items/seed as bench.py so `gen/0-shot` cross-checks F-017. |
+| **D-007** | **Wobble score = `max(interventional_deficit, gated·observational)`.** Interventional `(1 − margin)` always counts; dispersion (`2·D`) counts only for *decidable* prompts, gated to 0 for undecidable ones. Worst-case combine (max), full decomposition + score CI retained. Battery gains an `answer: yes\|no\|null` label; null when decidability is disputed. | Phrasing-fragility is unconditional wobble; rerun-variation is wobble only when there's a fact to be stable about. Appropriate uncertainty and epistemic instability are behaviorally indistinguishable (F-013), so the decidability label is *required*, not a shortcut. |
+| **D-008** | **Bootstrap is for CIs on *derived/composite* statistics, not a substitute for reruns.** Use it for the wobble score, the model-level headline (resample prompts), and benchmark accuracy (resample items — the correct unit, since reruns of one item are correlated). It is NOT a shortcut around actual sampling: resampling can't invent power, and for a plain proportion it just reproduces Wilson. The real way to spend fewer *calls* is adaptive/sequential sampling, not bootstrap. | Kate asked whether we could "bootstrap into" reruns; the honest answer is no for base rates, yes for composites — where there's no clean closed form and resampling recorded outcomes is free. |
+| **D-009** | **Harness wobble = sweep the eval harness on fixed items.** Two axes: scoring (`gen` = sample+parse a letter vs `ll` = argmax over first-token letter logprobs, the official method) × shots (0 vs 5, exemplars from MMLU's `dev` split). Metric = **natural-position accuracy** (the leaderboard number), CI bootstrapped over items; spread across the 2×2 = harness wobble, main effects decompose it. `ll` via ollama native `/api/chat` `logprobs:true, top_logprobs:20`. | F-019 argued official-vs-ours is "not directly comparable"; this turns that argument into a *quantified decomposition* — how many points are scoring vs shots vs everything-else — instead of a hand-wave. Same items/seed as bench.py so `gen/0-shot` cross-checks F-017. |
 | **D-010** | **Concurrency lives in the harness, not the provider; one OpenAI-compatible adapter reaches every batching backend.** `evaluate(concurrency=N)` thread-pools the provider calls while aggregation stays pure and order-deterministic (identical numbers to the sequential run). Providers stay synchronous (`ask` / `rank_letters`); a single `OpenAICompatibleProvider` points at vLLM / llama.cpp / mlx / ollama-`/v1` / hosted by `base_url`. | Backends batch *server-side* when you keep many requests in flight — so the client just needs concurrency + a portable HTTP shape, and one adapter covers local *and* remote. Keeps the harness backend-agnostic and the IP-clean local↔GPU switch a one-line change (F-024). |
 
 ## Findings ledger
@@ -43,17 +43,17 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-009** | **`pluto_planet` was a *partial* artifact.** Its v0.1 "knife-edge" (margin 0.58) relaxed to borderline-SOLID (0.65) once the stilted reorder was replaced. Not a clean knife-edge; the colon-fronting was inflating its fragility. | vPOC v0.2 |
 | **F-010** | **`cereal_soup` is the robust knife-edge.** Survives natural reorders *and* the power bump: near-unanimous "no" on rerun (disp 0.10) yet a lexical rephrase ("Is a bowl of cereal soup?") shifts it (margin 0.47, `max_ci` 0.61 = confident). The clearest confirmed two-axis payoff. | vPOC v0.2 |
 | **F-011** | Even at N=150 / M=60, only **2/8** points resolve — prompts cluster right at the thresholds (margin ≈ 0.60, disp ≈ 0.15), which slice the densest band. Points to data-derived thresholds or continuous confident-membership, not a fixed grid. | vPOC v0.2 |
-| **F-012** | **The model has a ~5–15% rerun-noise floor** even on rock-solid facts (water 0.06, pluto 0.05, prime 0.09). So a *fixed* dispersion threshold will always cut through the "solid" cluster — the hard grid was the wrong abstraction (→ the continuous squish score, D-007). | vPOC v0.2 |
+| **F-012** | **The model has a ~5–15% rerun-noise floor** even on rock-solid facts (water 0.06, pluto 0.05, prime 0.09). So a *fixed* dispersion threshold will always cut through the "solid" cluster — the hard grid was the wrong abstraction (→ the continuous wobble score, D-007). | vPOC v0.2 |
 | **F-013** | **Appropriate uncertainty and epistemic instability are behaviorally indistinguishable** from outputs alone: a decidable fact the model has lost its grip on and a genuinely undecidable question produce the *same* output distribution (phrasing-stable dispersion). Only external ground truth separates them — which is why D-007's decidability gate is necessary, not a convenience. | reasoning → D-007 |
 | **F-014** | **Qwen-0.8B is cross-lingually *consistent* on clear facts:** mean EN↔ZH `\|Δ\|` = 0.10, and **zero majority accuracy gaps** — it gets every decidable fact right in *both* languages. More robust than predicted; my "we'll catch an accuracy gap" bet lost. | x-lingual |
-| **F-015** | **Pluto is the cross-lingual outlier among facts** (`\|Δ\|`=0.33): 95% "not a planet" in English vs only 62% in Chinese. The model's grip on the recent, English-discourse-heavy IAU reclassification is much weaker in Chinese — real cross-lingual squish, on the one fact with a contested history. | x-lingual |
-| **F-016** | **Cultural framing is language-bound.** Both cultural items swing hard cross-lingually (hotdog 0.32, soymilk 0.43), and 豆浆是汤吗 ("is soy milk a soup") **flips its majority**: *no* in English (0.43), *yes* in Chinese (0.86). Confounded (not clean squish), but a crisp demo that category conventions live per-language — and the Chinese-culture item swung most. | x-lingual |
-| **F-017** | **A bare benchmark number is nearly meaningless without the squish breakdown.** On MMLU:world_religions the 0.8B's 36% accuracy is a *position-bias artifact*: accuracy swings **48 points** by answer-position (A 65% → B 17%, *below* the 25% chance floor), driven by a 56%-A chosen-letter bias. The whole squishlab thesis, on a real benchmark, first run. | bench |
-| **F-018** | **Bootstrap-over-items widens the accuracy CI honestly:** [0.31, 0.42] vs the naive Wilson-over-trials [0.33, 0.40] — item clustering matters (D-008). And **~29% of answers flip their content under option reordering** (interventional squish 0.29 [0.24, 0.35]). | bench |
-| **F-019** | **Official Qwen3.5-0.8B numbers exist** (HF model card, non-thinking mode: MMLU-Pro 29.7, MMLU-Redux 48.5, C-Eval 46.4, MMMLU 34.1; thinking mode ~10–13 pts higher). Two sharp points: **(a)** Qwen's *own* recommended inference settings are `top_p 0.95 / top_k 20 / presence_penalty 1.5 / temp 1.0` = **ollama's Modelfile default verbatim** — so the config we dismissed as "ollama's packaging" (D-003) is Qwen's *official* one. There is no *neutral* config; even the official number is a config choice, which strengthens, not weakens, the point. **(b)** Official scores are log-likelihood + few-shot + full-precision + full-benchmark; ours is generation + zero-shot + Q8 + a 40-item slice — *not directly comparable*, and none of the official numbers carry a CI or a position-bias/squish breakdown. | web / model card |
+| **F-015** | **Pluto is the cross-lingual outlier among facts** (`\|Δ\|`=0.33): 95% "not a planet" in English vs only 62% in Chinese. The model's grip on the recent, English-discourse-heavy IAU reclassification is much weaker in Chinese — real cross-lingual wobble, on the one fact with a contested history. | x-lingual |
+| **F-016** | **Cultural framing is language-bound.** Both cultural items swing hard cross-lingually (hotdog 0.32, soymilk 0.43), and 豆浆是汤吗 ("is soy milk a soup") **flips its majority**: *no* in English (0.43), *yes* in Chinese (0.86). Confounded (not clean wobble), but a crisp demo that category conventions live per-language — and the Chinese-culture item swung most. | x-lingual |
+| **F-017** | **A bare benchmark number is nearly meaningless without the wobble breakdown.** On MMLU:world_religions the 0.8B's 36% accuracy is a *position-bias artifact*: accuracy swings **48 points** by answer-position (A 65% → B 17%, *below* the 25% chance floor), driven by a 56%-A chosen-letter bias. The whole wobblelab thesis, on a real benchmark, first run. | bench |
+| **F-018** | **Bootstrap-over-items widens the accuracy CI honestly:** [0.31, 0.42] vs the naive Wilson-over-trials [0.33, 0.40] — item clustering matters (D-008). And **~29% of answers flip their content under option reordering** (interventional wobble 0.29 [0.24, 0.35]). | bench |
+| **F-019** | **Official Qwen3.5-0.8B numbers exist** (HF model card, non-thinking mode: MMLU-Pro 29.7, MMLU-Redux 48.5, C-Eval 46.4, MMMLU 34.1; thinking mode ~10–13 pts higher). Two sharp points: **(a)** Qwen's *own* recommended inference settings are `top_p 0.95 / top_k 20 / presence_penalty 1.5 / temp 1.0` = **ollama's Modelfile default verbatim** — so the config we dismissed as "ollama's packaging" (D-003) is Qwen's *official* one. There is no *neutral* config; even the official number is a config choice, which strengthens, not weakens, the point. **(b)** Official scores are log-likelihood + few-shot + full-precision + full-benchmark; ours is generation + zero-shot + Q8 + a 40-item slice — *not directly comparable*, and none of the official numbers carry a CI or a position-bias/wobble breakdown. | web / model card |
 | **F-020** | **ollama's logprobs are top-20-capped but near-lossless for MC.** `top_logprobs` hard-caps at 20 (50+ → HTTP 400); it returns the top-N alternatives, not the full vocab softmax. But on a lettered-MC first token the distribution is so peaked that the top-20 captures **99.9%** of the mass, and candidate-letter coverage measured **0.95 at 0-shot / 1.00 at 5-shot** (few-shot format-anchoring closes the gap). When a letter falls outside top-20 its true prob is < e⁻⁹ ≈ 0.0001, so treating it as −∞ for the argmax is harmless. The `ll` scorer is effectively exact. | probe / harness |
 | **F-021** | **A 20-point spread from harness alone.** Same model, same 40 items: natural-position accuracy runs **0.30 → 0.50** across the four harnesses (`ll/0-shot` 0.50, `gen/0-shot` 0.41, `ll/5-shot` 0.38, `gen/5-shot` 0.30). Main effects: **scoring (ll−gen) +0.08** (reading the distribution beats sampling a letter), **shots (5−0) −0.12** (few-shot *hurts* this 0.8B, robustly across both scoring methods). So F-019's 36-vs-48.5 "gap" was mostly scoring-method + which-number-you-report, not capability: measured the official way (`ll`), our crude Q8 40-item slice brackets the official 48.5 (0.50 [0.35,0.65]). The leaderboard number is a *harness choice*, quantified. | harness |
-| **F-023** | **Config squish is small and localized on binary decisions — prediction confirmed.** Controlled full-softmax vs Qwen-recommended (top_p .95 / top_k 20 / presence 1.5), same 8-prompt battery, 150 reruns each: **mean dispersion 0.141 vs 0.140 (Δ −0.001)**, mean \|Δp_yes\| 0.019, **1/8** prompts with a Δp CI excluding zero, **0** majority flips, decidable accuracy 1.00 both. The lone confident shift is `pluto_planet` (dispersion 0.047 → **0.000**): truncation clips the residual minority mass on the one near-unanimous prompt, so "as it ships" makes the model look *slightly more* reliable exactly where it had a sliver of doubt. Pre-registered prediction (top_p/top_k barely truncate a 2-way split; presence can't touch the first token) held. Refines D-003: config squish is real but its bite scales with the *width of the output tail* — negligible on binary yes/no, and expected to matter on the MC benchmark's chosen-letter tail (where truncation would nudge `gen` toward the more-A-biased argmax, linking to F-022). | config_ab |
+| **F-023** | **Config wobble is small and localized on binary decisions — prediction confirmed.** Controlled full-softmax vs Qwen-recommended (top_p .95 / top_k 20 / presence 1.5), same 8-prompt battery, 150 reruns each: **mean dispersion 0.141 vs 0.140 (Δ −0.001)**, mean \|Δp_yes\| 0.019, **1/8** prompts with a Δp CI excluding zero, **0** majority flips, decidable accuracy 1.00 both. The lone confident shift is `pluto_planet` (dispersion 0.047 → **0.000**): truncation clips the residual minority mass on the one near-unanimous prompt, so "as it ships" makes the model look *slightly more* reliable exactly where it had a sliver of doubt. Pre-registered prediction (top_p/top_k barely truncate a 2-way split; presence can't touch the first token) held. Refines D-003: config wobble is real but its bite scales with the *width of the output tail* — negligible on binary yes/no, and expected to matter on the MC benchmark's chosen-letter tail (where truncation would nudge `gen` toward the more-A-biased argmax, linking to F-022). | config_ab |
 | **F-024** | **Concurrency is the cheap win; llama.cpp is the fast local backend; mlx-lm's server does not batch.** Harness `concurrency` alone gave **~4.7×** on the existing ollama with no config change (10.9→2.3s on a 10-item ll pass). Head-to-head on the *identical* Qwen3-0.6B Q4_K_M GGUF (ollama vs llama.cpp) and Qwen3-0.6B-8bit (mlx), 40-prompt load, req/s: **llama.cpp** 11.3→**28** (best; ~1.9× ollama single-stream, saturates at its 8 slots), **ollama** 6.0→~18 (auto-batches to ~4), **mlx-lm** 6.1→~6 (*flat* — `mlx_lm.server` serializes concurrent requests). Turns the ~9h full-MMLU reorder pass into ~2h (ollama) / ~1.3h (llama.cpp), all local. mlx_parallm (batched `batch_generate`) fixes MLX's gap but is Python-only (no HTTP), generation-only (no logprobs → no `ll` scoring), and Qwen-unverified — so llama.cpp stays the pick. | backend bench |
 | **F-022** | **Log-likelihood scoring does *not* cure position bias — it sharpens it.** Switching gen→ll, the 0-shot position swing *grows* 0.48 → 0.70 and the chosen-A share *rises* 56% → 67%, even as debiased accuracy improves 0.36 → 0.48. Sampling at temp 1 blurs the model's positional preference (it occasionally samples off-top); argmax commits to the top logit every time, so ll is simultaneously more accurate *and* more polarized. The bias lives in the weights, not the readout — the "cleaner" scoring method exposes it undiluted rather than removing it. My "ll will fix the bias" prediction lost. | harness |
 
@@ -61,8 +61,8 @@ should not change it.** Two lenses, which turn out to be two axes:
 
 ## 2026-07-18 — design + vPOC-mock
 
-Framed squish as sensitivity to things that shouldn't matter, and split it into the
-two lenses above. Built a synthetic mock (`scratchpad/squish_poc.py`) with two
+Framed wobble as sensitivity to things that shouldn't matter, and split it into the
+two lenses above. Built a synthetic mock (`scratchpad/wobble_poc.py`) with two
 independent knobs per prompt: `true_p_yes` (drives observational dispersion) and
 `true_flip_rate` (drives interventional margin).
 
@@ -73,7 +73,7 @@ KNIFE-EDGE (looks-decided-but-flips-on-paraphrase). Adding the interventional ax
 what opens the plane. → **D-001.**
 
 Model plan: a tiny local model so we control everything. 8-bit not 4-bit because
-aggressive quantization is *itself* a squish source we don't want to confound with
+aggressive quantization is *itself* a wobble source we don't want to confound with
 the model's own behavior. → **D-002.**
 
 ## 2026-07-20 — vPOC-real: first light
@@ -103,7 +103,7 @@ explicit, portable config: **pure temperature sampling from the full softmax**
   three of four rephrasings → **no** (wrong), and the flips don't follow a clean rule
   ("Is 0 even?" → yes, "Is the number zero an even number?" → no). A definite math
   fact comes out phrasing-dependent and mostly *incorrect*. This is the phenomenon
-  squishlab exists to catch, found on the first real run, un-designed.
+  wobblelab exists to catch, found on the first real run, un-designed.
 - **F-004 (what v0 got wrong):** (a) the margin metric was majority-flip — it only
   registers a paraphrase that crosses 50%, so it pinned 7/8 prompts at margin 1.0 and
   the whole x-axis collapsed to the right edge. (b) N=30 gives dispersions with wide
@@ -111,7 +111,7 @@ explicit, portable config: **pure temperature sampling from the full softmax**
   `hotdog/prime/tomato` cluster (5/30) — a **one-sample** difference deciding a
   quadrant. Meaningless.
 
-Artifacts: `results/vpoc_real.json`, `results/squish_plane_real.png`.
+Artifacts: `results/vpoc_real.json`, `results/wobble_plane_real.png`.
 
 ## 2026-07-20 — the max-vs-mean decision (D-004), worked in full
 
@@ -139,7 +139,7 @@ aggregation must be worst-case or the axis can't do its one job.
 **Resolution (three moves):**
 1. *Different aggregation levels want different stats.* **Within a prompt** (paraphrase
    shifts → margin): worst-case. **Across prompts** (per-prompt margins → the model's
-   headline squish): central tendency + named worst-offenders. The max-vs-mean fight
+   headline wobble): central tendency + named worst-offenders. The max-vs-mean fight
    was two questions in one coat.
 2. *Tame max with CIs, don't replace it.* Plane plots the worst-case **point**
    (`1 − max|δ̂|`) with its **Newcombe CI** as an error bar, and flags any point whose
@@ -156,23 +156,23 @@ aggregation must be worst-case or the axis can't do its one job.
 surface; a headline number should mean one thing.
 
 **Two caveats worst-case amplifies:** (1) paraphrase quality is now load-bearing — a
-meaning-*changing* paraphrase produces a false squish; mitigations are the auditable
+meaning-*changing* paraphrase produces a false wobble; mitigations are the auditable
 hot-spot every run and the confident-shift requirement. (2) constant K per battery or
 comparability dies. → **D-006** (typed, constant-K taxonomy).
 
 ## 2026-07-20 — v0.1 built
 
-Refactored the reusable core into the package: `src/squishlab/stats.py` (Wilson +
+Refactored the reusable core into the package: `src/wobblelab/stats.py` (Wilson +
 Newcombe + `confident_shift`, with `tests/test_stats.py`, 6/6 green) and
-`src/squishlab/client.py` (the explicit `CONTROLLED` config + `OllamaClient`). The
+`src/wobblelab/client.py` (the explicit `CONTROLLED` config + `OllamaClient`). The
 experiment (`experiments/vpoc_real.py`) now: continuous margins with all three
 aggregations + hot-spot; Wilson/Newcombe CIs on both axes; typed paraphrases
 (N=60 canonical / 25 per paraphrase); plane with CI error bars and hollow markers for
 `unresolved` points. Run launched → results pending in this entry.
 
-**Results (308s, 1,480 calls).** `results/vpoc_v01.json`, `results/squish_plane_v01.png`.
+**Results (308s, 1,480 calls).** `results/vpoc_v01.json`, `results/wobble_plane_v01.png`.
 
-- **The x-axis came alive.** Margins now spread 0.45 (`hotdog_sandwich`, squishiest) to
+- **The x-axis came alive.** Margins now spread 0.45 (`hotdog_sandwich`, wobbleiest) to
   0.92 (`tomato_fruit`, most robust); v0 had 7/8 pinned at 1.0. The continuous
   shift-based metric fixed the dead axis.
 - **F-005 — real knife-edges.** `pluto_planet` and `cereal_soup` sit low on *both* axes:
@@ -193,7 +193,7 @@ aggregations + hot-spot; Wilson/Newcombe CIs on both axes; typed paraphrases
 
 N=150 / M=60, 3,600 calls, 12.4 min. Two changes: reorder paraphrases rewritten as
 natural restructurings (killing the colon-fronting confound), and N/M bumped ~2.5× to
-halve the CIs. `results/vpoc_v02.json`, `results/squish_plane_v02.png`.
+halve the CIs. `results/vpoc_v02.json`, `results/wobble_plane_v02.png`.
 
 The headline: **the framework caught and corrected a false positive from our own v0.1.**
 
@@ -214,17 +214,17 @@ The headline: **the framework caught and corrected a false positive from our own
   isn't noise now, it's that the *thresholds* (0.15 / 0.60) sit in the densest part of
   the data. More N won't fix that; rethinking the thresholds will.
 - Net picture of this model: **mostly solid, with diffuse mild fragility and one true
-  knife-edge.** v0.1 over-stated the squish (bad paraphrases inflated it); v0.2 is the
+  knife-edge.** v0.1 over-stated the wobble (bad paraphrases inflated it); v0.2 is the
   honest version.
 
-## 2026-07-20 — the squish score + the decidability gate (D-007)
+## 2026-07-20 — the wobble score + the decidability gate (D-007)
 
 F-011 forced the question: the hard quadrant grid can't be decisive when the model's
 own **~10% rerun-noise floor** (F-012) sits right under the dispersion line and every
 point piles onto the thresholds. The fix isn't a better line, it's the continuous
-**squish score** from the original design (headline + factors + hot-spot).
+**wobble score** from the original design (headline + factors + hot-spot).
 
-But combining the two axes surfaced a real fork: **they aren't symmetric squish.**
+But combining the two axes surfaced a real fork: **they aren't symmetric wobble.**
 
 - **Interventional margin-deficit `(1 − M)` is unconditional.** A meaning-preserving
   rephrase should never move a factual answer, decidable or not. Always a defect.
@@ -235,11 +235,11 @@ The deep reason (**F-013**): you *cannot* tell appropriate uncertainty from epis
 instability from outputs alone. A decidable fact the model has lost its grip on
 (50/50, phrasing-stable) and a genuinely undecidable question produce the identical
 output distribution. Only external ground truth distinguishes them. So a naive
-`D + (1−M)` mis-scores `rain_tomorrow` (honestly uncertain) as maximally squishy, and
-a pure-`(1−M)` misses seed-squish on decidable facts (a 50/50 "is water wet" would read
+`D + (1−M)` mis-scores `rain_tomorrow` (honestly uncertain) as maximally wobbly, and
+a pure-`(1−M)` misses seed-wobble on decidable facts (a 50/50 "is water wet" would read
 as perfectly reliable). Neither works.
 
-**Decision (D-007):** `squish = max( 1 − margin , [decidable]·2·dispersion )`. The
+**Decision (D-007):** `wobble = max( 1 − margin , [decidable]·2·dispersion )`. The
 interventional channel always counts; dispersion is **gated by a decidability label**
 (part of the supervision we already committed to), worst-case combined, decomposition
 kept. Roadmap-consistent: supervised → full gated score; unsupervised/discovered →
@@ -256,14 +256,14 @@ tomato_fruit    0.31  OBSERVATIONAL       ── the only rerun-driven one
 ```
 
 `rain` correctly drops out of the danger zone (dispersion gated off); `tomato` correctly
-*rises* on dispersion (it wobbles 15% about a botanical fact — real squish that
+*rises* on dispersion (it wobbles 15% about a botanical fact — real wobble that
 pure-interventional would have missed). Both failure modes handled.
 
-Built: `src/squishlab/squish.py` (`squish_score` + `model_squish`, tested,
-`tests/test_squish.py` 6/6), battery gained conservative `answer` labels (hotdog /
+Built: `src/wobblelab/wobble.py` (`wobble_score` + `model_wobble`, tested,
+`tests/test_wobble.py` 6/6), battery gained conservative `answer` labels (hotdog /
 cereal / rain → null), and **scoring is a separate post-processing step**
 (`experiments/score.py`) so we can re-score without re-running the model. Artifacts:
-`results/squish_scores_v02.{png,json}`.
+`results/wobble_scores_v02.{png,json}`.
 
 ## 2026-07-20 — cross-lingual probe (EN vs 中文)
 
@@ -283,24 +283,24 @@ The result was more nuanced than expected, and it corrected a prediction:
 - **F-015 — except Pluto.** `|Δ|`=0.33: 95% "not a planet" in English, but only 62% in
   Chinese (majority still correct, but the grip is much looser). It's the single fact with
   a *recent, contested, English-discourse-heavy* history (the 2006 IAU reclassification),
-  and that's exactly where the cross-lingual knowledge thins. A clean cross-lingual squish.
+  and that's exactly where the cross-lingual knowledge thins. A clean cross-lingual wobble.
 - **F-016 — culture is language-bound.** Both cultural items swung hard (hotdog 0.32,
   soymilk 0.43), and **豆浆是汤吗 flips its majority across languages** — "no, soy milk
-  isn't a soup" in English, "yes it is" in Chinese. That's not squish (it's confounded,
+  isn't a soup" in English, "yes it is" in Chinese. That's not wobble (it's confounded,
   correctly labelled null), it's the model reflecting *different category conventions in
   each language*, which is a finding in its own right and a vindication of gating cultural
   items out of the clean measurement.
 
-Net: the cleanest cross-lingual squish signal is small-but-real (Pluto), the model is
+Net: the cleanest cross-lingual wobble signal is small-but-real (Pluto), the model is
 otherwise cross-lingually solid on facts, and the cultural items behave as confounded-but-
-interesting rather than as squish. The design (invariant-facts-are-clean, cultural-items-
+interesting rather than as wobble. The design (invariant-facts-are-clean, cultural-items-
 are-a-bias-look) held up.
 
-## 2026-07-21 — benchmark squish on MMLU (the original idea)
+## 2026-07-21 — benchmark wobble on MMLU (the original idea)
 
 The application the whole project was aimed at: instead of a leaderboard's bare accuracy
-number, report **accuracy + a CI + a squish score**. Built the reusable MC machinery
-(`src/squishlab/benchmark.py`, tested — the option-permutation round-trip is the heart of
+number, report **accuracy + a CI + a wobble score**. Built the reusable MC machinery
+(`src/wobblelab/benchmark.py`, tested — the option-permutation round-trip is the heart of
 it) and the harness (`experiments/bench.py`). Also added `bootstrap_ci` to `stats.py`
 (D-008), prompted by Kate's bootstrap question.
 
@@ -320,15 +320,15 @@ item are correlated, so Wilson-over-trials lies).
   **A 56% / B 8% / C 11% / D 25%.** The model mostly answers "A," so it looks competent
   only when the answer happens to be A. A leaderboard would print "36%"; the honest report
   is "36% ± 5, but really 65% if the answer's at A and 17% if it's at B."
-- **F-018 — CI + reorder squish.** Bootstrap-over-items CI [0.31, 0.42] is properly wider
+- **F-018 — CI + reorder wobble.** Bootstrap-over-items CI [0.31, 0.42] is properly wider
   than naive Wilson-over-trials [0.33, 0.40]. ~29% of answers flip content under reordering.
 
 This is exactly the pitch, demonstrated: the leaderboard number is nearly meaningless
-without the squish, and squishlab surfaces the position bias, the reorder fragility, and
+without the wobble, and wobblelab surfaces the position bias, the reorder fragility, and
 the honest CI in one shot. `results/bench_world_religions.{png,json}`. Next: TruthfulQA
-MC1 (predict *higher* squish — adversarial-by-construction), and more subjects/models.
+MC1 (predict *higher* wobble — adversarial-by-construction), and more subjects/models.
 
-## 2026-07-21 — harness squish: the leaderboard number is a config choice, quantified
+## 2026-07-21 — harness wobble: the leaderboard number is a config choice, quantified
 
 F-019 left an open charge: our 36% and the official 48.5 are "not directly comparable"
 because the harnesses differ (generation + zero-shot + Q8 vs log-likelihood + few-shot +
@@ -370,14 +370,14 @@ seed, same items, reproducible instrument.
   A better finding than the one I bet on: you cannot scoring-method your way out of a
   model that reaches for "A."
 
-Net: harness squish is real and large (20 pts here), it decomposes cleanly (scoring helps,
+Net: harness wobble is real and large (20 pts here), it decomposes cleanly (scoring helps,
 few-shot hurts, position bias is model-intrinsic), and the leaderboard's single number is
 demonstrably one draw from a harness-dependent range. Next: TruthfulQA MC1 (still queued,
-predict higher squish); then config-as-squish (D-003 → data).
+predict higher wobble); then config-as-wobble (D-003 → data).
 
-## 2026-07-21 — config squish: D-003's argument, turned into (a small) number
+## 2026-07-21 — config wobble: D-003's argument, turned into (a small) number
 
-The third leg. D-003 held that the sampling config is itself a squish source; F-019
+The third leg. D-003 held that the sampling config is itself a wobble source; F-019
 sharpened it (ollama's Modelfile *is* Qwen's recommended config). Time to measure it, not
 assert it. Two arms on the same 8-prompt battery: controlled full-softmax vs Qwen's
 recommended top_p .95 / top_k 20 / presence 1.5, every other knob neutral in both so the
@@ -393,15 +393,15 @@ config makes the model look *marginally more sure* on the one prompt where it wa
 
 Two things worth keeping. **(1)** The prompt where config bit is `pluto_planet` — the same
 fact that's the cross-lingual outlier (F-015) and the partial-artifact knife-edge (F-009).
-Config squish concentrates where the model's grip is *already loosest*: solid facts have no
+Config wobble concentrates where the model's grip is *already loosest*: solid facts have no
 tail to clip, genuine 50/50s (rain, dispersion 0.42) keep both answers far above the
 truncation floor, and only the barely-decided prompt has a thin minority for top_p to cut.
-**(2)** This doesn't weaken D-003, it *scopes* it: config squish is real but its magnitude
+**(2)** This doesn't weaken D-003, it *scopes* it: config wobble is real but its magnitude
 tracks the width of the output tail. On binary yes/no it's a rounding error; on the
 benchmark's chosen-letter distribution (4 letters + format tokens) truncation has real tail
 to bite, and would push the `gen` path toward the sharper, more-A-biased argmax we measured
 as `ll` (F-022). The natural follow-up is config-A/B on the *benchmark*, not the battery —
-that's where the three legs (benchmark / harness / config squish) converge.
+that's where the three legs (benchmark / harness / config wobble) converge.
 
 Three legs now stand: **which items + scoring** (F-017), **which harness** (F-021/22),
 **which config** (F-023) — a leaderboard number is a choice at every level, each now
@@ -433,6 +433,47 @@ via the *identical* ollama GGUF blob feeding both ollama and llama.cpp). → **F
 A bonus: the `OpenAICompatibleProvider` drove both llama.cpp and mlx `/v1` first try — the same
 adapter that will point at a vLLM pod. `experiments/backends.py` reproduces the bake-off.
 
+## 2026-07-23 — RENAME IN PROGRESS: squishlab → wobblelab (branch `rename-wobblelab`)
+
+Full rename (project + package + metric vocabulary). "wobble" is the more accessible umbrella
+term; the squish/wobble distinction only matters in methodology prose, not the brand.
+
+**DONE on branch `rename-wobblelab` (uncommitted):**
+- `git mv src/squishlab → src/wobblelab`, `git mv squish.py → wobble.py`.
+- Three-case content replace (`squish→wobble`, `Squish→Wobble`, `SQUISH→WOBBLE`) across 43
+  text files (src, tests, experiments, docs, README, pyproject, .github, pitch/). Zero
+  "squish" left outside results/.
+- Renamed files whose *names* held squish: `test_squish.py→test_wobble.py`, results plots
+  (`wobble_plane_*.png`, `wobble_scores_*`), pitch SVGs (`wobblelab_report_card_*.svg`), pitch
+  docs (`wobblelab-pitch*.{html,md}`). Rewrote keys inside results/*.json. Fixed prose
+  artifacts (`wobbley→wobbly`, `wobbleing→wobbling`).
+- Metric API renamed: `wobble_score`, `wobble_factor`, `wobble_by_kind`, `interventional_wobble`,
+  `observational_wobble`, `model_wobble`, "wobble plane".
+
+**REMAINING (immediate, to finish the branch):**
+1. Reinstall: `pip uninstall -y squishlab && pip install -e ".[dev,bench]"` in the pyenv venv
+   (still named `squishlab`; keep using `PYENV_VERSION=squishlab`) so `import wobblelab` resolves.
+2. `ruff format . && ruff check .` then `pytest` — must stay green (60 tests).
+3. Bump `pyproject.toml` version `0.0.1 → 0.1.0`.
+4. Commit on the branch; merge to `main`.
+5. NOTE: result/pitch **PNGs still show "SQUISH" baked into the pixels** (can't sed an image) —
+   regenerate charts later to fix; filenames + JSON already renamed.
+
+**Kate's account-level TODOs (not code):** claim `wobblelab` on PyPI (it's free; 404 confirmed)
++ configure Trusted Publishing pending-publisher for it; leave/tombstone `squishlab` (published
+v0.0.1, don't delete); rename the GitHub repo (auto-redirects); optionally rename the pyenv venv.
+
+**Other pending (post-rename):**
+- Full MMLU-Pro run was **killed ~25% into pass 1** (no checkpointing → lost). Redo as a ~2–3k
+  subset (~30–45 min on llama.cpp) or on a rented GPU. My ~1.5h estimate was wrong — MMLU-Pro's
+  long 10-option prompts run ~4× slower (~10 calls/s, prefill-bound), so full 12k ≈ 3–4h local.
+- `Benchmark` **ABC** + concrete `ConfigMCQBenchmark` (config-driven flat mapping) + subclass
+  for nested schemas (TruthfulQA) + a `BENCHMARKS` registry; port the loaders onto it (thin
+  `load_*` shims). Chosen ABC over Protocol: we own the impls + want shared `load()` + enforce
+  the blanks. Do this in wobblelab, after the rename lands.
+- vLLM pod adapter for the real-model spike (adapter exists; needs pod config + IP clearance).
+  Backend bake-off (F-024): llama.cpp `--parallel` is the fast local pick (~28 req/s, keeps ll).
+
 ## Open questions / backlog
 
 - **A `BatchProvider` seam (stub).** Offline eval has the whole prompt set upfront, so a
@@ -445,15 +486,15 @@ adapter that will point at a vLLM pod. `experiments/backends.py` reproduces the 
 - **vLLM adapter for the real-model spike.** `OpenAICompatibleProvider` already speaks vLLM's
   `/v1`; the remaining work is a pod/serverless config + the IP clearance to run on company
   vs personal resources. Est. ~$1–15 for a full-corpus 7B/70B run (rented A100/H100).
-- ~~**Match the official harness to measure harness-squish directly.**~~ **Done**
+- ~~**Match the official harness to measure harness-wobble directly.**~~ **Done**
   (D-009, F-020/21/22, `experiments/harness.py`): ll + few-shot eval mode built, 2×2
   harness sweep run, 20-pt spread quantified and decomposed. Remaining threads it opened:
   **(a)** run the sweep on the *full* subject (not a 40-item slice) and on more subjects,
   to see if "few-shot hurts" and the scoring lift hold in aggregate; **(b)** 5-shot
   position profiles (we only profiled 0-shot) — does few-shot change the position bias?;
-  **(c)** TruthfulQA MC1 still queued (predict higher squish, adversarial-by-construction;
+  **(c)** TruthfulQA MC1 still queued (predict higher wobble, adversarial-by-construction;
   variable option counts need the loader generalized past a fixed 4).
-- ~~**Config as a squish axis, quantified.**~~ **Done** (F-023, `experiments/config_ab.py`):
+- ~~**Config as a wobble axis, quantified.**~~ **Done** (F-023, `experiments/config_ab.py`):
   measured on the binary battery — small and localized (Δ mean dispersion −0.001; only the
   near-unanimous pluto shifts confidently). Follow-up that would show the *large* version:
   run the same controlled-vs-Qwen-recommended A/B on the **MC benchmark**, where the wider
@@ -465,9 +506,9 @@ adapter that will point at a vLLM pod. `experiments/backends.py` reproduces the 
 - **Multiple-comparisons on the worst-case margin.** As K grows, more chances for a
   false-significant shift. If the taxonomy scales past ~10 types, use 99% CIs or
   Bonferroni, or report a high quantile (p90) instead of the strict max.
-- **Paraphrase validation.** Worst-case + a sloppy paraphrase = false squish. Consider
+- **Paraphrase validation.** Worst-case + a sloppy paraphrase = false wobble. Consider
   a cheap check that paraphrases are genuinely meaning-preserving (embedding distance,
   or a second model's agreement) before trusting a hot-spot.
-- **The model headline.** Not yet built — a decomposable squish factor across the whole
+- **The model headline.** Not yet built — a decomposable wobble factor across the whole
   battery (central tendency + worst-offenders + per-type breakdown), per Kate's
   "headline number + factors + hot-spots" design.

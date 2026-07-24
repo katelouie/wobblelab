@@ -4,7 +4,7 @@ No live endpoint: we stub `_post` to return OpenAI-shaped payloads and check tha
 Provider methods build the right request and parse the right answer out of it.
 """
 
-from squishlab import OpenAICompatibleProvider, Provider
+from wobblelab import OpenAICompatibleProvider, Provider
 
 
 class _Stub(OpenAICompatibleProvider):

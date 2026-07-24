@@ -1,11 +1,11 @@
-"""The squish score: how much a model's answer moves under what shouldn't matter.
+"""The wobble score: how much a model's answer moves under what shouldn't matter.
 
 Combines the two measurement channels into one headline, respecting their asymmetry
 (lab-journal D-007):
 
-  - interventional squish (phrasing-fragility, ``1 - margin``) is UNCONDITIONAL: a
+  - interventional wobble (phrasing-fragility, ``1 - margin``) is UNCONDITIONAL: a
     meaning-preserving rephrase should never change an answer, decidable or not.
-  - observational squish (rerun ``dispersion``) is CONDITIONAL: a defect only when
+  - observational wobble (rerun ``dispersion``) is CONDITIONAL: a defect only when
     there is a fact to be stable about. On an undecidable prompt, rerun variation is
     appropriate uncertainty, so it is gated OFF. (Behaviorally you cannot tell the two
     apart from outputs alone -- F-013 -- so the decidability label is required, not a
@@ -23,14 +23,14 @@ from __future__ import annotations
 import statistics
 
 
-def squish_score(
+def wobble_score(
     dispersion: float,
     margin_max: float,
     answer: str | None,
     disp_ci: tuple[float, float] | None = None,
     margin_ci: tuple[float, float] | None = None,
 ) -> dict:
-    """Per-prompt squish score plus its decomposition.
+    """Per-prompt wobble score plus its decomposition.
 
     Args:
         dispersion: rerun dispersion in [0, 0.5].
@@ -53,7 +53,7 @@ def squish_score(
         driver = "both"
 
     out = {
-        "squish": round(score, 3),
+        "wobble": round(score, 3),
         "interventional": round(interventional, 3),
         "observational": round(observational, 3) if decidable else None,
         "decidable": decidable,
@@ -62,17 +62,17 @@ def squish_score(
     if disp_ci is not None and margin_ci is not None:
         interv_lo, interv_hi = 1 - margin_ci[1], 1 - margin_ci[0]
         obs_lo, obs_hi = (2 * disp_ci[0], 2 * disp_ci[1]) if decidable else (0.0, 0.0)
-        out["squish_ci"] = (
+        out["wobble_ci"] = (
             round(max(interv_lo, obs_lo), 3),
             round(max(interv_hi, obs_hi), 3),
         )
     return out
 
 
-def squish_factor(**signals: float) -> dict:
-    """A single 0-1 unreliability headline: the WORST of the measured squish signals.
+def wobble_factor(**signals: float) -> dict:
+    """A single 0-1 unreliability headline: the WORST of the measured wobble signals.
 
-    "Squish factor" answers one question for a report card: how much can this model's answer
+    "Wobble factor" answers one question for a report card: how much can this model's answer
     move under something that should not move it? We combine **worst-case (max)**, consistent
     with the plane's worst-case margin (D-004) and the score's worst-case channel-combine
     (D-007) -- a model is only as reliable as its most fragile axis, and averaging would let a
@@ -82,7 +82,7 @@ def squish_factor(**signals: float) -> dict:
     normalized spread). Returns the factor, the *driving* signal, a band label, and the full
     decomposition, so "why is it high" is always one glance away.
 
-    >>> squish_factor(reorder=0.365, position_swing=0.667, run_spread=0.198)["factor"]
+    >>> wobble_factor(reorder=0.365, position_swing=0.667, run_spread=0.198)["factor"]
     0.667
     """
     clamped = {k: max(0.0, min(1.0, v)) for k, v in signals.items()}
@@ -97,20 +97,20 @@ def squish_factor(**signals: float) -> dict:
     }
 
 
-def model_squish(scored_rows: list[dict]) -> dict:
+def model_wobble(scored_rows: list[dict]) -> dict:
     """Model-level headline: central tendency across the battery + worst offenders.
 
-    Each row must carry at least "name", "squish", "driver".
+    Each row must carry at least "name", "wobble", "driver".
     """
-    scores = [r["squish"] for r in scored_rows]
-    worst = sorted(scored_rows, key=lambda r: r["squish"], reverse=True)
+    scores = [r["wobble"] for r in scored_rows]
+    worst = sorted(scored_rows, key=lambda r: r["wobble"], reverse=True)
     return {
-        "mean_squish": round(statistics.fmean(scores), 3),
-        "median_squish": round(statistics.median(scores), 3),
-        "max_squish": round(max(scores), 3),
+        "mean_wobble": round(statistics.fmean(scores), 3),
+        "median_wobble": round(statistics.median(scores), 3),
+        "max_wobble": round(max(scores), 3),
         "n_prompts": len(scores),
         "worst_offenders": [
-            {"name": r["name"], "squish": r["squish"], "driver": r["driver"]}
+            {"name": r["name"], "wobble": r["wobble"], "driver": r["driver"]}
             for r in worst[:3]
         ],
     }

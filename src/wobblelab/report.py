@@ -1,15 +1,15 @@
 """The catalog artifact: one call, one model, a benchmark number you can actually trust.
 
 `evaluate(provider, items)` runs a benchmark through a `Task` (default: multiple-choice) and
-returns a `ModelReport` — accuracy WITH a confidence interval, both squish axes (does the
+returns a `ModelReport` — accuracy WITH a confidence interval, both wobble axes (does the
 answer move across reruns / across meaning-preserving perturbations), and, for choice tasks,
 the position-bias profile that catches the mirage. `compare()` runs it across models.
 
-The harness is *family-agnostic*: it owns reruns, CIs, and squish aggregation, and delegates
+The harness is *family-agnostic*: it owns reruns, CIs, and wobble aggregation, and delegates
 "how to perturb" and "how to score" to the Task. So the same code produces a report for MMLU,
 TruthfulQA (variable option counts), and — once those Tasks are built — SWE-bench-style
 execution evals, changing nothing here. It is also item-agnostic (the caller supplies items;
-dataset loading stays in squishlab.loaders) and deterministic given a deterministic provider,
+dataset loading stays in wobblelab.loaders) and deterministic given a deterministic provider,
 so it's fully testable with MockProvider and no model running.
 """
 
@@ -17,10 +17,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from squishlab.benchmark import LETTERS, modal
-from squishlab.provider import Provider
-from squishlab.stats import bootstrap_ci
-from squishlab.task import MultipleChoiceTask, Task
+from wobblelab.benchmark import LETTERS, modal
+from wobblelab.provider import Provider
+from wobblelab.stats import bootstrap_ci
+from wobblelab.task import MultipleChoiceTask, Task
 
 
 @dataclass(frozen=True)
@@ -38,16 +38,16 @@ class ModelReport:
     n_rerun: int
     accuracy: float | None  # position-debiased; None if the task is ungraded
     accuracy_ci: tuple[float, float] | None  # bootstrapped over items
-    interventional_squish: (
+    interventional_wobble: (
         float  # answer-content flips across meaning-preserving perturbations
     )
-    observational_squish: float  # answer-content flips across reruns of the same input
+    observational_wobble: float  # answer-content flips across reruns of the same input
     accuracy_by_position: tuple[float, ...] | None = None  # choice tasks only
     position_swing: float | None = None  # max-min accuracy across answer positions
     chosen_distribution: tuple[float, ...] | None = (
         None  # which slot the model reaches for
     )
-    squish_by_kind: dict[str, float] = field(
+    wobble_by_kind: dict[str, float] = field(
         default_factory=dict
     )  # per perturbation kind
     provenance: dict = field(default_factory=dict)
@@ -63,9 +63,9 @@ class ModelReport:
             "accuracy_ci": [round(x, 3) for x in self.accuracy_ci]
             if self.accuracy_ci
             else None,
-            "interventional_squish": round(self.interventional_squish, 3),
-            "observational_squish": round(self.observational_squish, 3),
-            "squish_by_kind": {k: round(v, 3) for k, v in self.squish_by_kind.items()},
+            "interventional_wobble": round(self.interventional_wobble, 3),
+            "observational_wobble": round(self.observational_wobble, 3),
+            "wobble_by_kind": {k: round(v, 3) for k, v in self.wobble_by_kind.items()},
             "provenance": self.provenance,
         }
         if self.accuracy_by_position is not None:
@@ -85,17 +85,17 @@ class ModelReport:
                 f"- **accuracy: {self.accuracy:.1%}**  (95% CI {lo:.1%}–{hi:.1%})"
             )
         lines.append(
-            f"- interventional squish: {self.interventional_squish:.1%} of answers flip "
+            f"- interventional wobble: {self.interventional_wobble:.1%} of answers flip "
             f"content under a meaning-preserving perturbation"
         )
         lines.append(
-            f"- observational squish: {self.observational_squish:.1%} rerun instability"
+            f"- observational wobble: {self.observational_wobble:.1%} rerun instability"
         )
-        if len(self.squish_by_kind) > 1:
+        if len(self.wobble_by_kind) > 1:
             per_kind = " · ".join(
-                f"{k} {v:.0%}" for k, v in sorted(self.squish_by_kind.items())
+                f"{k} {v:.0%}" for k, v in sorted(self.wobble_by_kind.items())
             )
-            lines.append(f"- squish by perturbation kind: {per_kind}")
+            lines.append(f"- wobble by perturbation kind: {per_kind}")
         if self.accuracy_by_position is not None:
             k = len(self.accuracy_by_position)
             by_pos = "  ".join(
@@ -139,8 +139,8 @@ def evaluate(
     item the harness runs every perturbation (the interventional axis) ``n_rerun`` times (the
     observational axis; collapsed to 1 when the task is deterministic), then aggregates:
     accuracy with a bootstrap-over-items CI (the correct unit — reruns of one item are
-    correlated), interventional squish (does the modal content change across perturbations),
-    observational squish (does it change across reruns), and — for choice tasks — accuracy by
+    correlated), interventional wobble (does the modal content change across perturbations),
+    observational wobble (does it change across reruns), and — for choice tasks — accuracy by
     answer position + the chosen-letter distribution. Variable option counts are handled;
     position stats aggregate over whichever slots actually occur.
 
@@ -250,7 +250,7 @@ def evaluate(
     )
     interventional = sum(per_item_interv) / len(per_item_interv)
     observational = sum(obs_terms) / len(obs_terms) if obs_terms else 0.0
-    squish_by_kind = {
+    wobble_by_kind = {
         k: kind_flip.get(k, 0) / kind_total[k] for k in kind_total if kind_total[k]
     }
 
@@ -275,12 +275,12 @@ def evaluate(
         n_rerun=rerun,
         accuracy=accuracy,
         accuracy_ci=acc_ci,
-        interventional_squish=interventional,
-        observational_squish=observational,
+        interventional_wobble=interventional,
+        observational_wobble=observational,
         accuracy_by_position=acc_by_pos,
         position_swing=pos_swing,
         chosen_distribution=chosen_dist,
-        squish_by_kind=squish_by_kind,
+        wobble_by_kind=wobble_by_kind,
         provenance={
             "config": provider.config(),
             "task": task.name,
@@ -298,7 +298,7 @@ def compare(providers: dict[str, Provider], items: list, **kwargs) -> list[Model
 def compare_markdown(reports: list[ModelReport]) -> str:
     """A comparison table for a set of reports — the shape a catalog page wants."""
     header = (
-        "| model | accuracy | 95% CI | interv. squish | position swing |\n"
+        "| model | accuracy | 95% CI | interv. wobble | position swing |\n"
         "|---|---|---|---|---|\n"
     )
 
@@ -307,7 +307,7 @@ def compare_markdown(reports: list[ModelReport]) -> str:
         ci = f"{r.accuracy_ci[0]:.1%}–{r.accuracy_ci[1]:.1%}" if r.accuracy_ci else "—"
         swing = f"{r.position_swing:.2f}" if r.position_swing is not None else "—"
         return (
-            f"| {r.model} | {acc} | {ci} | {r.interventional_squish:.1%} | {swing} |\n"
+            f"| {r.model} | {acc} | {ci} | {r.interventional_wobble:.1%} | {swing} |\n"
         )
 
     return header + "".join(cell(r) for r in reports)
@@ -329,7 +329,7 @@ def score_stability(
     re-samples and the score moves; a deterministic one (``scoring="ll"``) reproduces exactly,
     which is itself the honest answer (its run-to-run variance is zero). Report a score as
     ``mean ± spread`` across runs, never as a lone point. Note the aggregate is often far more
-    stable than individual answers — the wobble lives per-item (observational squish), which is
+    stable than individual answers — the wobble lives per-item (observational wobble), which is
     why both numbers matter.
     """
     runs = []

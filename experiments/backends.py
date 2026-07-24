@@ -22,8 +22,8 @@ Then: python experiments/backends.py
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from squishlab import OllamaClient, OpenAICompatibleProvider
-from squishlab.loaders import load_mmlu
+from wobblelab import OllamaClient, OpenAICompatibleProvider
+from wobblelab.loaders import load_mmlu
 
 N_PROMPTS = 40
 CONCURRENCY = (1, 4, 8, 16)

@@ -22,7 +22,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import (  # noqa: E402
+from wobblelab import (  # noqa: E402
     MultipleChoiceTask,
     OllamaClient,
     ParaphraseWithModel,
@@ -31,7 +31,7 @@ from squishlab import (  # noqa: E402
     evaluate,
     score_stability,
 )
-from squishlab.loaders import load_mmlu  # noqa: E402
+from wobblelab.loaders import load_mmlu  # noqa: E402
 
 MODEL = "qwen3.5:0.8b"
 QUANT = "Q8_0"
@@ -96,7 +96,7 @@ def plot(by_kind: dict, runs: list, mean: float, path: Path) -> None:
     )
 
     fig.suptitle(
-        f"SquishLab · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
+        f"WobbleLab · MMLU:{SUBJECT} · {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=12,
         fontweight="bold",
@@ -133,7 +133,7 @@ def main() -> None:
     results_dir = Path(__file__).resolve().parent.parent / "results"
     results_dir.mkdir(exist_ok=True)
     plot(
-        r.squish_by_kind,
+        r.wobble_by_kind,
         stab["runs"],
         stab["mean"],
         results_dir / "pillars_world_religions.png",

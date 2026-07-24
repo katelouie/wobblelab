@@ -1,4 +1,4 @@
-"""Explicit, portable ollama client for squishlab.
+"""Explicit, portable ollama client for wobblelab.
 
 The whole point: NOT ollama's implicit Modelfile defaults. Every sampling knob is
 set here to a documented, neutral value so the measurement is reproducible and

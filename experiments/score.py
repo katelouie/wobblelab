@@ -1,8 +1,8 @@
-"""Apply the squish score to a measurement and rank the battery.
+"""Apply the wobble score to a measurement and rank the battery.
 
 Pure post-processing (no model calls): reads a results JSON from a vPOC run, applies
-squishlab.squish with the battery's decidability labels, prints a ranked table + the
-model-level headline, and plots the squish ranking with its decomposition.
+wobblelab.wobble with the battery's decidability labels, prints a ranked table + the
+model-level headline, and plots the wobble ranking with its decomposition.
 
 Run:  python experiments/score.py [results/vpoc_v02.json]
 """
@@ -18,7 +18,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab.squish import model_squish, squish_score  # noqa: E402
+from wobblelab.wobble import model_wobble, wobble_score  # noqa: E402
 from vpoc_real import BATTERY, MODEL, QUANT  # noqa: E402  (answers live in the battery)
 
 DRIVER_COLOR = {
@@ -45,7 +45,7 @@ def main() -> None:
 
     scored = []
     for row in data["results"]:
-        s = squish_score(
+        s = wobble_score(
             dispersion=row["dispersion"],
             margin_max=row["margin_max"],
             answer=answer_for(row),
@@ -57,47 +57,47 @@ def main() -> None:
         s["hotspot_type"] = row.get("hotspot", {}).get("type")
         scored.append(s)
 
-    scored.sort(key=lambda r: r["squish"], reverse=True)
-    head = model_squish(scored)
+    scored.sort(key=lambda r: r["wobble"], reverse=True)
+    head = model_wobble(scored)
 
-    print(f"squish ranking  ·  {MODEL} ({QUANT})  ·  from {path.name}")
+    print(f"wobble ranking  ·  {MODEL} ({QUANT})  ·  from {path.name}")
     print(
-        f"model headline: mean={head['mean_squish']}  median={head['median_squish']}  "
-        f"max={head['max_squish']}  (n={head['n_prompts']})"
+        f"model headline: mean={head['mean_wobble']}  median={head['median_wobble']}  "
+        f"max={head['max_wobble']}  (n={head['n_prompts']})"
     )
     print("-" * 74)
     print(
-        f"{'prompt':17} {'squish':>6} {'interv':>6} {'obs':>6}  {'driver':14} decidable"
+        f"{'prompt':17} {'wobble':>6} {'interv':>6} {'obs':>6}  {'driver':14} decidable"
     )
     for r in scored:
         obs = "--" if r["observational"] is None else f"{r['observational']:.2f}"
         print(
-            f"{r['name']:17} {r['squish']:6.2f} {r['interventional']:6.2f} {obs:>6}  "
+            f"{r['name']:17} {r['wobble']:6.2f} {r['interventional']:6.2f} {obs:>6}  "
             f"{r['driver']:14} {'yes' if r['decidable'] else 'no'}"
         )
     print(
         "worst offenders:",
         ", ".join(
-            f"{w['name']}({w['squish']},{w['driver'][:6]})"
+            f"{w['name']}({w['wobble']},{w['driver'][:6]})"
             for w in head["worst_offenders"]
         ),
     )
 
-    # ---- plot: squish ranking, colored by driver, with score CIs ----
+    # ---- plot: wobble ranking, colored by driver, with score CIs ----
     plt.rcParams["font.family"] = "DejaVu Sans"
-    order = list(reversed(scored))  # squishiest at top
+    order = list(reversed(scored))  # wobbleiest at top
     n = len(order)
     fig, ax = plt.subplots(figsize=(9.0, 0.62 * n + 1.8), dpi=150)
     fig.patch.set_facecolor("#12141a")
     ax.set_facecolor("#181b23")
     for i, r in enumerate(order):
-        lo, hi = r.get("squish_ci", (r["squish"], r["squish"]))
+        lo, hi = r.get("wobble_ci", (r["wobble"], r["wobble"]))
         ax.barh(
             i,
-            r["squish"],
+            r["wobble"],
             color=DRIVER_COLOR[r["driver"]],
             height=0.62,
-            xerr=[[r["squish"] - lo], [hi - r["squish"]]],
+            xerr=[[r["wobble"] - lo], [hi - r["wobble"]]],
             error_kw={"ecolor": "#c9b79e", "elinewidth": 1, "capsize": 3},
             zorder=3,
         )
@@ -106,9 +106,9 @@ def main() -> None:
     ax.set_yticks(range(n))
     ax.set_yticklabels([r["name"] for r in order], color="#e7dcc8", fontsize=9)
     ax.set_xlim(0, 1.0)
-    ax.set_xlabel("squish  →  more sensitive to what shouldn't matter", color="#c9b79e")
+    ax.set_xlabel("wobble  →  more sensitive to what shouldn't matter", color="#c9b79e")
     ax.set_title(
-        f"SQUISH SCORE  ·  {MODEL} ({QUANT})",
+        f"WOBBLE SCORE  ·  {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=14,
         fontweight="bold",
@@ -118,7 +118,7 @@ def main() -> None:
     ax.text(
         0,
         1.04,
-        f"mean {head['mean_squish']} · median {head['median_squish']} · "
+        f"mean {head['mean_wobble']} · median {head['median_wobble']} · "
         f"bars = 95% CI · color = driver (amber phrasing / blue rerun / violet both)",
         transform=ax.transAxes,
         color="#8a7358",
@@ -129,14 +129,14 @@ def main() -> None:
     ax.tick_params(colors="#8a8f9a")
     fig.tight_layout()
     results_dir = path.parent
-    png = results_dir / f"squish_scores_{path.stem.split('_')[-1]}.png"
+    png = results_dir / f"wobble_scores_{path.stem.split('_')[-1]}.png"
     fig.savefig(png, facecolor=fig.get_facecolor(), bbox_inches="tight")
 
     out = {"source": path.name, "model_headline": head, "scored": scored}
-    (results_dir / f"squish_scores_{path.stem.split('_')[-1]}.json").write_text(
+    (results_dir / f"wobble_scores_{path.stem.split('_')[-1]}.json").write_text(
         json.dumps(out, indent=2)
     )
-    print(f"\nwrote {png.name} and squish_scores_{path.stem.split('_')[-1]}.json")
+    print(f"\nwrote {png.name} and wobble_scores_{path.stem.split('_')[-1]}.json")
 
 
 if __name__ == "__main__":

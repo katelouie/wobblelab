@@ -2,15 +2,15 @@
 
 import pytest
 
-from squishlab import (
+from wobblelab import (
     MockProvider,
     MultipleChoiceTask,
     Outcome,
     Task,
     picks_option_containing,
 )
-from squishlab.benchmark import MCItem
-from squishlab.task import CodeExecutionTask, JudgeTask
+from wobblelab.benchmark import MCItem
+from wobblelab.task import CodeExecutionTask, JudgeTask
 
 ITEM = MCItem(
     id="t", question="pick it", options=("CORRECT", "w1", "w2", "w3"), answer_idx=0
@@ -51,7 +51,7 @@ def test_mc_run_content_is_order_invariant_for_a_perfect_model():
     }
     assert contents == {
         ITEM.answer_idx
-    }  # never flips content -> zero interventional squish
+    }  # never flips content -> zero interventional wobble
 
 
 def test_planned_seams_raise_until_built():

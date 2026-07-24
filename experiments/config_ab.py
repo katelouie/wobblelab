@@ -1,12 +1,12 @@
-"""Config squish: how much does the *sampling config* alone move the measurement?
+"""Config wobble: how much does the *sampling config* alone move the measurement?
 
-D-003 argued the sampling config is itself a squish source -- "as it ships" measures the
+D-003 argued the sampling config is itself a wobble source -- "as it ships" measures the
 harness's packaging, not the model. F-019 sharpened it: ollama's Modelfile defaults are
 Qwen's *own* recommended settings (`ollama show --modelfile`: temperature 1, top_k 20,
 top_p 0.95, presence_penalty 1.5). This turns that argument into data: run the same
 canonical battery under two configs and measure how far the answer distribution moves.
 
-  A · controlled  -- pure temperature sampling from the full softmax (squishlab.CONTROLLED)
+  A · controlled  -- pure temperature sampling from the full softmax (wobblelab.CONTROLLED)
   B · qwen-rec     -- + Qwen's recommended top_p 0.95 / top_k 20 / presence_penalty 1.5
 
 Every other knob is held at the controlled-neutral value in BOTH arms, so the contrast
@@ -31,7 +31,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import OllamaClient, newcombe_diff_ci, wilson_ci  # noqa: E402
+from wobblelab import OllamaClient, newcombe_diff_ci, wilson_ci  # noqa: E402
 from vpoc_real import BATTERY, SUFFIX, parse  # noqa: E402
 
 MODEL = "qwen3.5:0.8b"
@@ -146,7 +146,7 @@ def plot(rows, path: Path) -> None:
         "observational dispersion  (min(p, 1-p) over 150 reruns)", color="#c9b79e"
     )
     ax.set_title(
-        f"CONFIG SQUISH · same battery, two sampling configs · {MODEL} ({QUANT})",
+        f"CONFIG WOBBLE · same battery, two sampling configs · {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=12,
         fontweight="bold",
@@ -205,7 +205,7 @@ def main() -> None:
     acc_qwen = sum(r["qwen_rec"]["correct"] for r in dec) / len(dec)
 
     print(
-        f"\nCONFIG SQUISH · {MODEL} ({QUANT}) · {len(rows)} prompts × {N_RERUN} reruns × 2 configs"
+        f"\nCONFIG WOBBLE · {MODEL} ({QUANT}) · {len(rows)} prompts × {N_RERUN} reruns × 2 configs"
     )
     print(
         f"  mean dispersion:   controlled {mean_ctrl:.3f}  vs  qwen-rec {mean_qwen:.3f}   (Δ {mean_qwen - mean_ctrl:+.3f})"

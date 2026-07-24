@@ -5,7 +5,7 @@ import xml.dom.minidom as minidom
 
 import pytest
 
-from squishlab import (
+from wobblelab import (
     JSONRenderer,
     MockProvider,
     SVGCardRenderer,
@@ -14,7 +14,7 @@ from squishlab import (
     production_card,
     score_stability,
 )
-from squishlab.benchmark import MCItem
+from wobblelab.benchmark import MCItem
 
 ITEMS = [
     MCItem(
@@ -29,7 +29,7 @@ ITEMS = [
 
 def _biased_report():
     # "always A" -> real position bias, so the card has non-trivial signals
-    from squishlab import always_position
+    from wobblelab import always_position
 
     prov = MockProvider(always_position(0))
     return evaluate(prov, ITEMS, scoring="ll", benchmark="mmlu:toy"), score_stability(
@@ -46,9 +46,9 @@ def test_benchmark_card_structure_and_verdict():
     # the position-bias panel carries a real swing and a plain-English verdict
     pos = card.panel("position_bias")
     assert pos.data["swing"] > 0.5 and "position preference" in pos.verdict
-    # verdict badge tracks the squish band
+    # verdict badge tracks the wobble band
     assert card.verdict in ("BENCHMARK UNRELIABLE", "USE WITH CAUTION", "RELIABLE")
-    assert card.squish_factor["factor"] == pytest.approx(
+    assert card.wobble_factor["factor"] == pytest.approx(
         pos.data["swing"]
     )  # worst-case driver
 
@@ -59,20 +59,20 @@ def test_card_to_dict_is_json_serializable():
     d = card.to_dict()
     dumped = json.dumps(d)  # must not raise
     assert json.loads(dumped)["lens"] == "benchmark"
-    assert {"subject", "verdict", "squish_factor", "panels", "provenance"} <= set(d)
+    assert {"subject", "verdict", "wobble_factor", "panels", "provenance"} <= set(d)
 
 
 def test_svg_renderer_produces_valid_svg():
     rep, stab = _biased_report()
     svg = SVGCardRenderer().render(benchmark_card(rep, stab))
     minidom.parseString(svg)  # well-formed XML or raises
-    assert svg.startswith("<svg") and "SQUISH FACTOR" in svg
+    assert svg.startswith("<svg") and "WOBBLE FACTOR" in svg
 
 
 def test_json_renderer_roundtrips():
     rep, stab = _biased_report()
     out = JSONRenderer().render(benchmark_card(rep, stab))
-    assert json.loads(out)["squish_factor"]["driver"] == "position_swing"
+    assert json.loads(out)["wobble_factor"]["driver"] == "position_swing"
 
 
 def test_production_card_from_measurements():
@@ -109,14 +109,14 @@ def test_production_card_from_measurements():
 
 
 def test_renderer_falls_back_for_unknown_panel_kind():
-    from squishlab import Panel, ReliabilityCard
+    from wobblelab import Panel, ReliabilityCard
 
     card = ReliabilityCard(
         subject={"model": "m"},
         lens="benchmark",
         verdict="RELIABLE",
         severity="good",
-        squish_factor={"factor": 0.0, "band": "low", "driver": None},
+        wobble_factor={"factor": 0.0, "band": "low", "driver": None},
         panels=[Panel(kind="a_brand_new_kind", title="Novel", data={"x": 1, "y": 0.5})],
     )
     svg = SVGCardRenderer().render(card)  # must not crash on an unknown kind

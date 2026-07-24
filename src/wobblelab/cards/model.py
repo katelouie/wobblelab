@@ -7,8 +7,8 @@ artifact. Redesign the card, add a format, or rearrange panels without touching 
 
 A card is a list of typed `Panel`s. Each panel is one self-describing unit -- its `kind`
 tells a renderer what it is, its `data` holds the kind-specific numbers, its `verdict` is the
-plain-English takeaway, its `severity` drives colour, and its `squish_signal` is the 0-1
-contribution it makes to the card's headline squish factor. New panel kinds are just new
+plain-English takeaway, its `severity` drives colour, and its `wobble_signal` is the 0-1
+contribution it makes to the card's headline wobble factor. New panel kinds are just new
 `kind` strings with a documented `data` schema; a renderer that doesn't know a kind can fall
 back to a generic view rather than break.
 """
@@ -31,7 +31,7 @@ class Panel:
       - "flip_rate":         {value, caption}
       - "perturbation":      {kinds: [{name, value, example}, ...], unit}
       - "cross_lingual":     {probes: [{name, a, b, delta}, ...], threshold, n_over, n_total, langs: [a, b]}
-      - "squish_plane":      {points: [{name, dispersion, margin, quadrant}, ...]}
+      - "wobble_plane":      {points: [{name, dispersion, margin, quadrant}, ...]}
       - "config_ab":         {sensitive: [names], n_agree, n_total, arms: [a, b]}
       - "provenance":        {recorded: [fields], complete: bool}
     """
@@ -41,7 +41,7 @@ class Panel:
     data: dict = field(default_factory=dict)
     verdict: str | None = None
     severity: str | None = None  # "good" | "caution" | "bad"
-    squish_signal: float | None = None  # 0-1 contribution to the card's squish factor
+    wobble_signal: float | None = None  # 0-1 contribution to the card's wobble factor
 
     def to_dict(self) -> dict:
         return {
@@ -50,7 +50,7 @@ class Panel:
             "data": self.data,
             "verdict": self.verdict,
             "severity": self.severity,
-            "squish_signal": self.squish_signal,
+            "wobble_signal": self.wobble_signal,
         }
 
 
@@ -62,7 +62,7 @@ class ReliabilityCard:
     lens: str  # "benchmark" | "production"
     verdict: str  # headline badge text, e.g. "BENCHMARK UNRELIABLE"
     severity: str  # overall "good" | "caution" | "bad"
-    squish_factor: dict  # from squish_factor(): {factor, driver, band, components}
+    wobble_factor: dict  # from wobble_factor(): {factor, driver, band, components}
     panels: list[Panel]
     provenance: dict = field(default_factory=dict)
 
@@ -72,7 +72,7 @@ class ReliabilityCard:
             "lens": self.lens,
             "verdict": self.verdict,
             "severity": self.severity,
-            "squish_factor": self.squish_factor,
+            "wobble_factor": self.wobble_factor,
             "panels": [p.to_dict() for p in self.panels],
             "provenance": self.provenance,
         }

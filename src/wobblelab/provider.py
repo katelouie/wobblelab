@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Callable, Protocol, runtime_checkable
 
-from squishlab.benchmark import LETTERS
+from wobblelab.benchmark import LETTERS
 
 
 @runtime_checkable

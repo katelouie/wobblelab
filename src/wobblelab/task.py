@@ -1,7 +1,7 @@
 """The benchmark-family seam: perturb an item, run one perturbation, score it into an Outcome.
 
-squishlab's two axes are universal — rerun the same input (observational), or perturb it in a
-meaning-preserving way (interventional) — so the *harness* (reruns, CIs, squish aggregation)
+wobblelab's two axes are universal — rerun the same input (observational), or perturb it in a
+meaning-preserving way (interventional) — so the *harness* (reruns, CIs, wobble aggregation)
 is written once and shared. What differs per benchmark family is only (a) what a meaning-
 preserving perturbation IS and (b) how you score a response. A `Task` supplies exactly those
 two things; `evaluate()` in report.py drives any Task without knowing its family.
@@ -18,9 +18,9 @@ from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from squishlab.benchmark import MCItem, parse_answer
-from squishlab.perturb import Perturbation, Presentation, ReorderOptions, render
-from squishlab.provider import Provider
+from wobblelab.benchmark import MCItem, parse_answer
+from wobblelab.perturb import Perturbation, Presentation, ReorderOptions, render
+from wobblelab.provider import Provider
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class Outcome:
         correct: graded correctness, or None if the task is ungraded / the response was
             unparseable. Aggregated into accuracy.
         content: the canonical "what the model produced", compared ACROSS perturbations
-            (interventional squish) and ACROSS reruns (observational squish). For a choice
+            (interventional wobble) and ACROSS reruns (observational wobble). For a choice
             task it's the chosen *original* option index; for a code task it'd be a hash of
             the observable behavior. None if the model produced nothing usable.
         slot / correct_slot / n_slots: position bookkeeping for *choice* tasks — which
@@ -42,7 +42,7 @@ class Outcome:
 
     correct: bool | None
     content: Hashable | None
-    kind: str | None = None  # which perturbation produced this (for per-kind squish)
+    kind: str | None = None  # which perturbation produced this (for per-kind wobble)
     slot: int | None = None
     correct_slot: int | None = None
     n_slots: int | None = None
@@ -132,7 +132,7 @@ class CodeExecutionTask:
         stays None (no answer position). ``deterministic=False`` (generation).
 
     The harness needs nothing new: accuracy = pass rate (bootstrapped over problems),
-    observational squish = pass/fail flips across reruns, interventional squish = pass/fail or
+    observational wobble = pass/fail flips across reruns, interventional wobble = pass/fail or
     behavior flips across paraphrases. The real work is sandboxed execution, not the seam.
     """
 
@@ -156,7 +156,7 @@ class JudgeTask:
     Sketch: ``perturbations`` = prompt paraphrases; ``run`` = ``provider.ask()`` to produce a
     response, then a judge model scores it, returning ``Outcome(correct=score>=threshold or
     None, content=score_bucket)``. Because the judge is itself a ``Provider``, "does the SCORE
-    move when you rerun or reword" is measurable with the very same machinery — judge-squish,
+    move when you rerun or reword" is measurable with the very same machinery — judge-wobble,
     for free.
     """
 

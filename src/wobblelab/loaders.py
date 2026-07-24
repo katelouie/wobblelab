@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import random
 
-from squishlab.benchmark import MCItem
+from wobblelab.benchmark import MCItem
 
 
 def _sample(n_total: int, n: int | None, seed: int) -> list[int]:

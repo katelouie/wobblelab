@@ -2,7 +2,7 @@
 
 The clean interventional axis for a benchmark is **permuting the answer options**. It is
 guaranteed meaning-preserving (reordering cannot change which option is correct), so any
-change in the model's answer is pure squish — no paraphrase-quality confound (contrast
+change in the model's answer is pure wobble — no paraphrase-quality confound (contrast
 F-006) — and it exposes position bias for free.
 
 An item's canonical option order is fixed; a *presentation order* is a tuple of original

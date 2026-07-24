@@ -1,4 +1,4 @@
-"""squishlab vPOC v0.2 -- the squish plane, done honestly.
+"""wobblelab vPOC v0.2 -- the wobble plane, done honestly.
 
 v0.2 changes (see docs/lab-journal.md, 2026-07-20):
   - reorder paraphrases rewritten as natural restructurings (killed the stilted
@@ -10,7 +10,7 @@ Inherited from v0.1: continuous shift-based margin (max / mean / max_ci) with a
 worst-case default, Wilson/Newcombe CIs on both axes, typed paraphrases, hot-spots,
 and UNRESOLVED flags for points whose CI straddles a threshold.
 
-Sampling config is the controlled, portable set (squishlab.client.CONTROLLED),
+Sampling config is the controlled, portable set (wobblelab.client.CONTROLLED),
 NOT ollama's Modelfile defaults. Everything logged into results/vpoc_v02.json.
 
 Run:  python experiments/vpoc_real.py
@@ -29,7 +29,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from squishlab import OllamaClient, confident_shift, newcombe_diff_ci, wilson_ci  # noqa: E402
+from wobblelab import OllamaClient, confident_shift, newcombe_diff_ci, wilson_ci  # noqa: E402
 
 MODEL = "qwen3.5:0.8b"
 QUANT = "Q8_0"
@@ -303,7 +303,7 @@ def plot(rows, path: Path) -> None:
     )
     ax.set_ylabel("observational dispersion  →  noisier on rerun", color="#c9b79e")
     ax.set_title(
-        f"THE SQUISH PLANE {VERSION}  ·  {MODEL} ({QUANT})",
+        f"THE WOBBLE PLANE {VERSION}  ·  {MODEL} ({QUANT})",
         color="#f6e8ce",
         fontsize=13,
         fontweight="bold",
@@ -349,7 +349,7 @@ def main() -> None:
     results_dir = Path(__file__).resolve().parent.parent / "results"
     results_dir.mkdir(exist_ok=True)
     tag = VERSION.replace(".", "")
-    plot(rows, results_dir / f"squish_plane_{tag}.png")
+    plot(rows, results_dir / f"wobble_plane_{tag}.png")
     out = {
         "version": f"vPOC-{VERSION}",
         "quantization": QUANT,
@@ -365,7 +365,7 @@ def main() -> None:
     }
     (results_dir / f"vpoc_{tag}.json").write_text(json.dumps(out, indent=2))
     print(
-        f"\nwrote results/squish_plane_{tag}.png and results/vpoc_{tag}.json in {out['seconds']}s"
+        f"\nwrote results/wobble_plane_{tag}.png and results/vpoc_{tag}.json in {out['seconds']}s"
     )
 
 
