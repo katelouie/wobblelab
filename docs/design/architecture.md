@@ -203,6 +203,70 @@ Most modern benchmarks specify **temp 0** for the point number, deliberately, fo
 
 ---
 
+## The benchmark lens: named harnesses as landmarks
+
+The unlock: **a named real harness is just a point in knob-space.** lm-eval's GPQA *is*
+`{0-shot, no-CoT, MC-log-likelihood, prompt-A}`; Inspect's GPQA *is* `{0-shot, CoT, gen+extract,
+"ANSWER: $LETTER", 4 epochs}`; the authors' *is* `{0-shot, CoT, gen+extract, "(X)", temp 0}`. So
+the "named harnesses" and the "sweep between knob values" are the *same space*. The harnesses are
+landmarks; the sweep fills in between them. (Concrete catalog: `research/harness-comparison.md`.)
+
+### Harnesses are configs in one engine, not black-box wraps
+
+The primary mechanism is to **re-implement each named harness as a `Harness` config in our own
+uniform engine**, not to invoke lm-eval / HELM / Inspect as external runners. Three reasons:
+those frameworks each own the model-calling, have hostile dependencies, and emit different output
+shapes; you cannot *sweep between* three black boxes because there is no shared parameterization
+to interpolate across; and our systems knobs (batch variance, seed, backend) only compose if we
+control the model interface. Invoking the real framework is an **optional fidelity check**, not
+the run engine.
+
+The price is the **validation handshake**, per (harness × benchmark): our re-implementation of a
+harness must reproduce that harness's *published number* for a known model, within tolerance. This
+is the fidelity gate that keeps the re-implementation honest, and it is the main cost of the lens
+(the LLaMA-65B example — 15 points from a `Choices:` prefix and an extraction change — is the
+warning that fidelity must be exact). Credibility lives in the handshake.
+
+### Landmarks + one-knob-at-a-time, not the dense grid
+
+The full cross-product of knobs is combinatorially large *and* full of incoherent cells (CoT + MC-
+log-likelihood does not type-check; CoT needs generation). Do not run it. The two valuable designs:
+
+- **Landmark points** — the 3-4 real named harnesses. "Here are the numbers people actually cite
+  and their spread." This is the one-model-many-numbers product directly.
+- **One-knob-at-a-time (OAT) from the anchor** — start at the authors' config, turn *one* knob,
+  measure the delta. "CoT is worth +X, 5-shot +Y, this extraction +Z." Decomposes the wobble into
+  per-knob contributions and stays inside valid, coherent configs (`Knob.variants(anchor)`).
+
+Reserve the dense grid for an opt-in research mode over a chosen 2-3 knobs when you specifically
+want interaction effects.
+
+### Two knob layers
+
+- **Harness-config knobs** (CoT, shots, format, scoring) define *which harness you are* — the
+  landmark + OAT layer.
+- **Systems / perturbation knobs** (batch variance, seed, backend, paraphrase) are applied *at* a
+  chosen harness (usually the anchor), holding the config fixed, and measure stability *there*.
+
+So a run is layered: pick a harness config (anchor or a landmark), then apply systems/perturbation
+knobs on top. "Authors' settings as the anchor, then batch-variance and custom knobs on top" is
+exactly this.
+
+### What a benchmark run produces
+
+1. **Landmark numbers** — the model under each real named harness, each pegged to its knob values,
+   each passing its handshake.
+2. **The OAT decomposition** — per-knob deltas from the authors' anchor, ranked (the hierarchy).
+3. **The systems floor** — batch/seed variance at the anchor (the base run).
+4. → the **benchmark-side reliability card**: e.g. "Model X on GPQA: 49% at the authors' anchor;
+   0.31-0.72 across four real harnesses; scoring-paradigm dominates at ±15pt; temp-0 batch floor
+   ±1pt; vs Model Y the 3-point leaderboard gap does / does not survive."
+
+Everything here is the `Study` layer orchestrating `Harness` configs and `Knob.variants`; it is
+not new machinery, it is the data model applied to the benchmark lens.
+
+---
+
 ## The audit JSON
 
 One self-describing object per study. Someone should be able to reproduce the run and verify
@@ -243,9 +307,15 @@ values, params, all present.
 
 - **Config + thin subclass** for benchmarks. TOML for the declarative harness spec; a small
   subclass for row→Item mapping and few-shot assembly.
+- **Named harnesses are `Harness` configs in our engine, not black-box wraps.** Re-implement
+  lm-eval / HELM / Inspect / authors' harnesses as configs in the uniform space; invoking the
+  real framework is an optional fidelity check. Each carries a published reference number, and the
+  handshake (reproduce it) is the gate.
+- **Benchmark sweeps = landmarks + OAT from the anchor, not the dense grid.** Run the real named
+  harnesses plus one-knob-at-a-time deviations from the authors' anchor; dense factorial is
+  opt-in research mode.
 - **Library core first, experiments after.** Build `Harness` / `Knob` / `Benchmark` / `Study`
-  in `src/wobblelab/`, then make `experiments/` thin callers. The core is the foundation and
-  MMLU-Pro needs it regardless.
+  in `src/wobblelab/`, then make `experiments/` thin callers.
 - **Benchmark-validity lens first.** It is where the reference-score handshake lives, and that
   handshake disciplines everything else. Production lens second.
 - **Multi-run N default** for the base run: start at N = 10 (tunable), so the temp-0
@@ -255,14 +325,18 @@ values, params, all present.
 
 ## First vertical slice
 
-Prove the architecture on one end-to-end path before adding breadth:
+Prove the architecture on one end-to-end path before adding breadth. **GPQA Diamond, three
+landmark harnesses, one known model.**
 
-1. `Benchmark` for **GPQA Diamond** carrying its true canonical harness (free-generation, `(A)`
-   options, "The correct answer is (X)" instruction, the authors' extraction cascade, temp 0,
-   a budget large enough to plateau).
-2. Base run on a known model, check the anchor lands near the published GPQA Diamond score. That
-   is the first trustworthy number.
-3. Then, and only then, add knobs: reorder, temperature, budget, prompt-style.
+1. `Benchmark` for GPQA Diamond, with three `Harness` configs: the **authors' reference**
+   (free-gen, `(A)` options, "The correct answer is (X)", extraction cascade, temp 0, plateau
+   budget), **lm-eval / Open LLM Leaderboard** (0-shot MC-log-likelihood, `acc_norm`), and
+   **Inspect** (CoT, "ANSWER: $LETTER", epochs).
+2. Run a known model under each; **handshake**: each landmark's number must land near its
+   published figure. If it does, we have three trustworthy numbers and their spread — the
+   one-model-many-numbers product, on one benchmark.
+3. Base run (N reruns) at the authors' anchor for the temp-0 systems floor.
+4. Then OAT knobs from the anchor: reorder, temperature, budget, CoT-on/off, shots.
 
 ---
 
