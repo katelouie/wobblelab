@@ -56,6 +56,10 @@ should not change it.** Two lenses, which turn out to be two axes:
 | **F-023** | **Config wobble is small and localized on binary decisions — prediction confirmed.** Controlled full-softmax vs Qwen-recommended (top_p .95 / top_k 20 / presence 1.5), same 8-prompt battery, 150 reruns each: **mean dispersion 0.141 vs 0.140 (Δ −0.001)**, mean \|Δp_yes\| 0.019, **1/8** prompts with a Δp CI excluding zero, **0** majority flips, decidable accuracy 1.00 both. The lone confident shift is `pluto_planet` (dispersion 0.047 → **0.000**): truncation clips the residual minority mass on the one near-unanimous prompt, so "as it ships" makes the model look *slightly more* reliable exactly where it had a sliver of doubt. Pre-registered prediction (top_p/top_k barely truncate a 2-way split; presence can't touch the first token) held. Refines D-003: config wobble is real but its bite scales with the *width of the output tail* — negligible on binary yes/no, and expected to matter on the MC benchmark's chosen-letter tail (where truncation would nudge `gen` toward the more-A-biased argmax, linking to F-022). | config_ab |
 | **F-024** | **Concurrency is the cheap win; llama.cpp is the fast local backend; mlx-lm's server does not batch.** Harness `concurrency` alone gave **~4.7×** on the existing ollama with no config change (10.9→2.3s on a 10-item ll pass). Head-to-head on the *identical* Qwen3-0.6B Q4_K_M GGUF (ollama vs llama.cpp) and Qwen3-0.6B-8bit (mlx), 40-prompt load, req/s: **llama.cpp** 11.3→**28** (best; ~1.9× ollama single-stream, saturates at its 8 slots), **ollama** 6.0→~18 (auto-batches to ~4), **mlx-lm** 6.1→~6 (*flat* — `mlx_lm.server` serializes concurrent requests). Turns the ~9h full-MMLU reorder pass into ~2h (ollama) / ~1.3h (llama.cpp), all local. mlx_parallm (batched `batch_generate`) fixes MLX's gap but is Python-only (no HTTP), generation-only (no logprobs → no `ll` scoring), and Qwen-unverified — so llama.cpp stays the pick. | backend bench |
 | **F-022** | **Log-likelihood scoring does *not* cure position bias — it sharpens it.** Switching gen→ll, the 0-shot position swing *grows* 0.48 → 0.70 and the chosen-A share *rises* 56% → 67%, even as debiased accuracy improves 0.36 → 0.48. Sampling at temp 1 blurs the model's positional preference (it occasionally samples off-top); argmax commits to the top logit every time, so ll is simultaneously more accurate *and* more polarized. The bias lives in the weights, not the readout — the "cleaner" scoring method exposes it undiluted rather than removing it. My "ll will fix the bias" prediction lost. | harness |
+| **F-025** | **GPQA Diamond is F-017 at its purest: the whole number is position bias.** Full 198-item gauntlet, qwen3:0.6b via llama.cpp `--parallel 8`, 2.5 min total. Debiased-ll accuracy **0.256 [0.249, 0.265]** sits *exactly* on the 25% chance floor — a 0.6B model knows nothing about graduate physics/chem/bio, as expected. But the position swing is **0.93** (accuracy by slot `[0.93, 0.10, 0.00, 0.00]`): in `ll` the model reflexively prefers **A** almost regardless of content, so it scores 93% when the answer sits at A and ~0% at C/D. Reorder flip **0.28**. Where world_religions had a 0.48 swing around a real 36%, GPQA has a 0.93 swing around pure chance — the cleanest possible demonstration that a bare accuracy can be *entirely* a slot artifact. | run_gpqa |
+| **F-026** | **Gen scoring *collapses* on GPQA — a compliance artifact, not below-chance knowledge.** Natural-order `gen` scores **3.4%** (below the 25% floor), and eerily stable run-to-run (±0.4pt over 5 runs). The number is misleading: raw outputs show **~96%+ are unparseable**. Told "answer with only the letter," the tiny model reflexively starts *explaining* ("To solve this problem…", "The pH of the…") and with the `max_tokens=4` budget never reaches a letter → parsed `None` → scored wrong. So 3.4% measures *instruction-following failure on hard, long prompts*, not anti-correlation with truth. The gen-vs-ll gap (3.4% vs 25.6% debiased) is therefore a harness artifact of **scoring method × token budget**, and `ll` is the only meaningful readout at this scale. Token budget is an untested harness knob — open question: does a bigger budget rescue the gen number, and how much does *that* alone move it? | run_gpqa |
+| **F-027** | **The token-budget cliff: `max_tokens` moves GPQA from 0% to 28% — a "setting" nobody reports.** Reproducing the *official* GPQA harness (github.com/idavidrein/gpqa: `(A) …` choices, "Format your response as: The correct answer is (X)", regex extraction) and sweeping only `max_tokens`: **budget 4 → accuracy 0.000 (parse coverage 0.000); budget 8 → 0.283 (coverage 0.995); budget 16–256 → flat 0.283 (coverage 1.000)**. Below 8 tokens the model can't even *fit* "The correct answer is (A)"; at 8+ it emits the format and every answer parses. A knob no leaderboard lists as part of a result swings the number 28 points, from nothing to above chance, then plateaus dead flat. Answers F-026: the collapse was 100% harness, 0% knowledge — the real number is ~28%. **Format matters too, independently:** at the *same* budget 64, our terse "answer with only the letter" harness scores 0.207 (coverage 0.722) vs the canonical "(X)" format 0.283 (coverage 1.000) — the prompt wording alone is worth ~7.6 points and 28 points of parse coverage. | gpqa_harness_sweep |
+| **F-028** | **Corrected Pillar-1: qwen3:0.6b is *slightly above chance* on GPQA, with a real ~5pt run-to-run band.** With the collapse fixed (canonical harness, budget 256, temp 1.0, 5 runs): accuracy **0.282 ± 0.017 (spread 0.050)**, runs `[0.258, 0.293, 0.308, 0.273, 0.278]`, every run above the 25% floor. So F-026's degenerate 3.4% ± 0.4pt was pure artifact; the honest natural-order gen number is ~28%, and its sampling noise on 198 items is std 1.7pt / spread 5pt (wide, as expected for a small corpus — this is the observational wobble the temp-0 official protocol would suppress to zero). | gpqa_harness_sweep |
 
 ---
 
@@ -479,6 +483,49 @@ v0.0.1, don't delete); rename the GitHub repo (auto-redirects); optionally renam
   the blanks. Do this in wobblelab, after the rename lands.
 - vLLM pod adapter for the real-model spike (adapter exists; needs pod config + IP clearance).
   Backend bake-off (F-024): llama.cpp `--parallel` is the fast local pick (~28 req/s, keeps ll).
+
+## 2026-07-23 — GPQA Diamond: the gauntlet, the collapse, and the harness cliff
+
+First real benchmark beyond MMLU. GPQA Diamond (198 graduate-level physics/chem/bio MCQs,
+gated dataset, `load_gpqa_diamond` with a seeded per-item option shuffle so the natural-order
+number isn't a position-bias freebie). Ran the two-pass gauntlet (`run_gpqa.py`) on qwen3:0.6b
+via llama.cpp `--parallel 8`, 2.5 min.
+
+**The gauntlet (F-025, F-026).** Debiased-`ll` accuracy landed *exactly* on the 25% chance
+floor (0.256) with a **0.93 position swing** — the model reflexively picks A, so the "accuracy"
+is almost pure slot artifact (F-017 at its purest). Natural-order `gen` came back **3.4%**,
+below chance, which looked alarming until I read the raw outputs: ~96% were *unparseable*. Told
+"answer with only the letter" with a 4-token budget, the model starts *explaining* and never
+reaches a letter. Not below-chance knowledge — a compliance/parse collapse (F-026).
+
+**Then Kate asked the right question:** why parse generations at all instead of logprobs, like
+MMLU? Answer: we *do* use `ll` for the accuracy/position pillar; `gen` is only for Pillar 1
+(run-to-run variance), which is **zero by construction** under deterministic `ll` argmax — you
+can't measure sampling noise with a method that doesn't sample. The collapse wasn't a reason to
+drop `gen`; it was our `gen` *config* being wrong for GPQA.
+
+**So we researched the real harness** (github.com/idavidrein/gpqa) before "fixing" anything —
+see [`research/notes.md`](research/notes.md) for the harness facts. GPQA is scored as *free
+generation*: `(A) …` choices, "Format your response as: The correct answer is (X)", regex
+extraction, generous budget. Fundamentally different from our terse letter-only MC harness.
+
+**The sweep (F-027, F-028), `gpqa_harness_sweep.py`.** Reproduced the canonical harness and
+swept `max_tokens`: **0.000 at budget 4 → 0.283 at budget 8, flat to 256.** A hyperparameter no
+leaderboard reports as part of a result moves the number 28 points, from nothing to above
+chance, then plateaus dead flat (the sharpest harness cliff we've found). Same budget, format
+swap: terse 0.207 vs canonical 0.283 — wording alone worth ~7.6 pts. Corrected Pillar-1 (temp 1,
+budget 256, 5 runs): **0.282 ± 0.017**, every run above chance. F-026's 3.4% was 100% harness.
+
+**The wobble hierarchy (framing that crystallized here, with the MMLU-Pro prior art).** The
+MMLU-Pro authors already report accuracy *distributions* across 24 prompt styles (μ, σ) — the
+interventional axis, measured by a benchmark's own team (see [`research/notes.md`](research/notes.md)).
+But their prompt-*wording* σ is tiny (~0.4–1.6 pts), while the knobs *we* keep hitting —
+scoring method (F-021, ~20 pts), token budget (F-027, 28 pts), prompt format (F-027, ~8 pts),
+CoT-vs-direct (MMLU-Pro right panel, 6–19 pts) — move the number an order of magnitude more.
+**Harness wobble has a hierarchy, and a credible reliability report has to say which knob it
+turned.** "Wobble" without that is ambiguous by 10×. This is now the spine of the pitch: not
+"benchmarks are noisy" but "here is the ranked list of harness decisions that actually move
+your number, with the ones nobody reports at the top."
 
 ## Open questions / backlog
 
